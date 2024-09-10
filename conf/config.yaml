@@ -1,0 +1,11 @@
+base_settings:
+  base_dir: "C:/Users/annae/OneDrive - Danmarks Tekniske Universitet/Speciale/Specialkursus"
+  seed: 0
+
+data_loader:
+  data_original_dir: "ImageCAS-images"
+  data_processed_dir: "ImageCASProcessing"
+  data_segmentation_dir: "ImageCAS-TotalSegmentator"
+  file_list_dir: "file_list.txt" #"ImageCAS-images/ImageCas_files.txt"
+  voxel_spacing: 1
+  patch_size: 10
