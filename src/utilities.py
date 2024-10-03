@@ -1,4 +1,5 @@
 import SimpleITK as sitk
+from datetime import datetime
 
 def spatial_resample_scan(image, desired_spacing):
     """

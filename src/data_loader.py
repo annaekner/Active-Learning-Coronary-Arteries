@@ -1,4 +1,5 @@
 import vtk
+import logging
 import numpy as np
 import SimpleITK as sitk
 
@@ -6,6 +7,9 @@ from pathlib import Path
 from torch.utils.data import Dataset
 
 from utilities import spatial_resample_scan
+
+# Set up logging
+log = logging.getLogger(__name__)
 
 class CoronaryArteryDataLoader(Dataset):
     def __init__(self, config):
@@ -19,7 +23,6 @@ class CoronaryArteryDataLoader(Dataset):
         self.file_list = self._load_file_list()
 
         self.voxel_spacing = config.data_loader.voxel_spacing
-        self.patch_size = config.data_loader.patch_size
     
     def _load_file_list(self):
         """ Load file list from text file into a list """
@@ -80,27 +83,27 @@ class CoronaryArteryDataLoader(Dataset):
         centerline_values = np.array([scalars.GetValue(i) for i in range(num_points)])
 
         # Info about the sample
-        print("\n----------------------------------------------- Info ------------------------------------------------")
-        print(f"Image index: {img_index}")
-        print(f"Image shape: {img.shape}")
-        print(f"Label shape: {label.shape}")
-        print(f"Unique values in label: {np.unique(label)}")
-        print(f"Number of unique values in label: {len(np.unique(label))}")
-        print(f"Number of centerline points: {num_points}")
-        print(f"Min HU value: {np.min(centerline_values):.2f}, Max HU value: {np.max(centerline_values):.2f}")
-        print("-------------------------------------------------------------------------------------------------------\n")
+        log.info("\n---------------------------------------- Info ------------------------------------------")
+        log.info(f"Image index: {img_index}")
+        log.info(f"Image shape: {img.shape}")
+        log.info(f"Label shape: {label.shape}")
+        log.info(f"Unique values in label: {np.unique(label)}")
+        log.info(f"Number of unique values in label: {len(np.unique(label))}")
+        log.info(f"Number of centerline points: {num_points}")
+        log.info(f"Min HU value: {np.min(centerline_values):.2f}, Max HU value: {np.max(centerline_values):.2f}")
+        log.info("-----------------------------------------------------------------------------------------\n")
 
         # Debug: Comparison of centerline HU values with image HU values
-        print("\n---------------------------------------- Debugging HU values ----------------------------------------")
+        log.info("\n--------------------------------- Debugging HU values ----------------------------------")
         number = 10
         start = centerline_indices[number]
         vtk_value = centerline_values[number]
         img_value = img[tuple(start)]
-        print(f"Centerline point (physical coordinates): {centerline_points[number]}")
-        print(f"Centerline point (index coordinates): {start}")
-        print(f"HU value from centerline: {vtk_value:.2f}")
-        print(f"HU value from image: {img_value}")
-        print("------------------------------------------------------------------------------------------------------\n")
+        log.info(f"Centerline point (physical coordinates): {centerline_points[number]}")
+        log.info(f"Centerline point (index coordinates): {start}")
+        log.info(f"HU value from centerline: {vtk_value:.2f}")
+        log.info(f"HU value from image: {img_value}")
+        log.info("----------------------------------------------------------------------------------------\n")
 
         # Dictionary of sample data
         sample = {
@@ -112,7 +115,6 @@ class CoronaryArteryDataLoader(Dataset):
                   'image_index': img_index, 
                   'spacing': spacing,
                   'origin': origin,
-                  'direction': direction,
-                  'patch_size': self.patch_size}
+                  'direction': direction}
 
         return sample
