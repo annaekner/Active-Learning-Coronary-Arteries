@@ -2,6 +2,7 @@ import logging
 import numpy as np
 
 from scipy.ndimage import binary_dilation
+from load_save_utilities import save_segmentation
 
 # Set up logging
 log = logging.getLogger(__name__)
@@ -12,12 +13,8 @@ def extract_lad_from_full_tree(sample, config):
     """
 
     # Load data from sample dictionary
-    img = sample['image']
     label = sample['label']
-    centerline = sample['centerline']
     centerline_indices = sample['centerline_indices']
-    centerline_values = sample['centerline_values']
-    img_index = sample['image_index']
 
     # Configuration settings
     dilation_radius = config.segmentation.dilation_radius

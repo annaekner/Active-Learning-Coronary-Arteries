@@ -62,6 +62,7 @@ class CoronaryArteryDataLoader(Dataset):
         label_nii = sitk.ReadImage(label_path)
         label_nii = spatial_resample_scan(label_nii, self.voxel_spacing)
         label = sitk.GetArrayFromImage(label_nii)
+        label = label.astype(np.bool) # Convert to boolean
         label = label.transpose(2, 1, 0) # Convert from (z, y, x) to (x, y, z)
 
         # Load centerline (of left anterior descending artery)
