@@ -14,7 +14,7 @@ def load_sample(index, config):
 
     return sample
 
-def save_segmentation(segmentation, sample, config, subset = 'train'):
+def save_segmentation(segmentation, sample, config, subset = 'train', output_path = None):
     """ Save segmentation as .nii.gz file """
 
     # Configuration settings
@@ -36,11 +36,12 @@ def save_segmentation(segmentation, sample, config, subset = 'train'):
     # Path for saving segmentation
     file_name = f"img{sample['image_index']}.nii.gz"
 
-    if subset == 'train':
-        output_path = f"{base_dir}/{dataset_processed_dir}/{train_labels_dir}/{file_name}"
-    
-    elif subset == 'test':
-        output_path = f"{base_dir}/{dataset_processed_dir}/{test_labels_dir}/{file_name}"
+    if not output_path:
+        if subset == 'train':
+            output_path = f"{base_dir}/{dataset_processed_dir}/{train_labels_dir}/{file_name}"
+        
+        elif subset == 'test':
+            output_path = f"{base_dir}/{dataset_processed_dir}/{test_labels_dir}/{file_name}"
 
     # Write the segmentation image to file
     sitk.WriteImage(segmentation_nii, output_path)
