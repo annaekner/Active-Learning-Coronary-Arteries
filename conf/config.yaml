@@ -10,7 +10,7 @@ data_loader:
   voxel_spacing: 1
 
 data_processed:
-  dataset_dir: "Datasets_raw/Dataset001_Heart"
+  dataset_dir: "nnUNet_raw/Dataset001_Heart"
   train_images_dir: "imagesTr"
   test_images_dir: "imagesTs"
   train_labels_dir: "labelsTr"
@@ -18,7 +18,7 @@ data_processed:
 
 segmentation:
   patch_size: 5
-  dilation_radius: 4
+  dilation_radius: 5
   sigma: 2
   strictness: 0.5
   ball_size: 2
