@@ -23,17 +23,25 @@ class CoronaryArteryDataLoader(Dataset):
         self.train_labels_dir = config.data_processed.train_labels_dir
         self.test_labels_dir = config.data_processed.test_labels_dir
 
+        self.voxel_spacing = config.data_loader.voxel_spacing
         self.label_type = label_type
         self.subset = subset
 
         self.file_list_dir = config.data_loader.file_list_dir
+        self.file_list_train = config.data_loader.file_list_train
+        self.file_list_test = config.data_loader.file_list_test
         self.file_list = self._load_file_list()
-
-        self.voxel_spacing = config.data_loader.voxel_spacing
     
     def _load_file_list(self):
         """ Load file list from text file into a list """
-        file_list = Path(f"{self.base_dir}/{self.file_list_dir}").read_text().splitlines()
+        if self.subset == 'train':
+            self.file_list_path = f'{self.base_dir}/{self.file_list_dir}/{self.file_list_train}'
+
+        elif self.subset == 'test':
+            self.file_list_path = f'{self.base_dir}/{self.file_list_dir}/{self.file_list_test}'
+
+        file_list = Path(self.file_list_path).read_text().splitlines()
+
         return file_list
 
     def __len__(self):
@@ -105,9 +113,6 @@ class CoronaryArteryDataLoader(Dataset):
         scalars = centerline.GetPointData().GetScalars()
         centerline_values = np.array([scalars.GetValue(i) for i in range(num_points)])
 
-        print(f'centerline_indices: {centerline_indices[:10]}')
-        print(f'centerline_values: {centerline_values[:10]}')
-
         # Info about the sample
         log.info("-------------------------------- Info -----------------------------------")
         log.info(f"Image index: {img_index}")
@@ -118,18 +123,6 @@ class CoronaryArteryDataLoader(Dataset):
         log.info(f"Number of unique values in label: {len(np.unique(label))}")
         log.info(f"Number of centerline points: {num_points}")
         log.info(f"Min HU value: {np.min(centerline_values):.2f}, Max HU value: {np.max(centerline_values):.2f}")
-        log.info("-------------------------------------------------------------------------\n")
-
-        # Debug: Comparison of centerline HU values with image HU values
-        log.info("------------------------- Debugging HU values ---------------------------")
-        number = 10
-        start = centerline_indices[number]
-        vtk_value = centerline_values[number]
-        img_value = img[tuple(start)]
-        log.info(f"Centerline point (physical coordinates): {centerline_points[number]}")
-        log.info(f"Centerline point (index coordinates): {start}")
-        log.info(f"HU value from centerline: {vtk_value:.2f}")
-        log.info(f"HU value from image: {img_value}")
         log.info("-------------------------------------------------------------------------\n")
 
         # Dictionary of sample data

@@ -6,7 +6,9 @@ data_loader:
   data_original_dir: "ImageCAS-images"
   data_processed_dir: "ImageCASProcessing"
   data_segmentation_dir: "ImageCAS-TotalSegmentator"
-  file_list_dir: "file_list.txt" 
+  file_list_dir: "file_lists" 
+  file_list_train: "file_list_train.txt"
+  file_list_test: "file_list_test.txt"
   voxel_spacing: 1
 
 data_processed:
@@ -21,9 +23,4 @@ data_predicted:
   date: "11_10_2024"
 
 segmentation:
-  patch_size: 5
   dilation_radius: 5
-  sigma: 2
-  strictness: 0.5
-  ball_size: 2
-
