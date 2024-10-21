@@ -6,18 +6,25 @@ import SimpleITK as sitk
 from pathlib import Path
 from torch.utils.data import Dataset
 
-from utilities import spatial_resample_scan
+from tools import spatial_resample_scan
 
 # Set up logging
 log = logging.getLogger(__name__)
 
 class CoronaryArteryDataLoader(Dataset):
-    def __init__(self, config):
+    def __init__(self, config, subset = 'train', label_type = 'full_coronary_tree'):
         # Configuration settings
         self.base_dir = config.base_settings.base_dir
         self.data_original_dir = config.data_loader.data_original_dir
-        self.data_processed_dir = config.data_loader.data_processed_dir
+        self.data_processed_dir = config.data_loader.data_processed_dir         # ImageCASProcessing
         self.data_segmentation_dir = config.data_loader.data_segmentation_dir
+
+        self.dataset_processed_dir = config.data_processed.dataset_dir          # nnUNet_raw
+        self.train_labels_dir = config.data_processed.train_labels_dir
+        self.test_labels_dir = config.data_processed.test_labels_dir
+
+        self.label_type = label_type
+        self.subset = subset
 
         self.file_list_dir = config.data_loader.file_list_dir
         self.file_list = self._load_file_list()
@@ -40,7 +47,6 @@ class CoronaryArteryDataLoader(Dataset):
 
         # Paths 
         img_path = f"{self.base_dir}/{self.data_original_dir}/all/{img_index}.img.nii.gz" 
-        label_path = f"{self.base_dir}/{self.data_original_dir}/all/{img_index}.label.nii.gz"
         centerline_path = f"{self.base_dir}/{self.data_processed_dir}/{img_index}.img/{img_index}_lad_centerline_hu.vtk"
 
         # Load image data (CT scan)
@@ -56,14 +62,29 @@ class CoronaryArteryDataLoader(Dataset):
         img = sitk.GetArrayFromImage(img_nii)
 
         # Convert from (z, y, x) to (x, y, z) https://simpleitk.org/SimpleITK-Notebooks/01_Image_Basics.html
-        img = img.transpose(2, 1, 0) 
+        # img = img.transpose(2, 1, 0) 
 
         # Load label (segmentation of full coronary tree)
-        label_nii = sitk.ReadImage(label_path)
-        label_nii = spatial_resample_scan(label_nii, self.voxel_spacing)
-        label = sitk.GetArrayFromImage(label_nii)
-        label = label.astype(np.bool) # Convert to boolean
-        label = label.transpose(2, 1, 0) # Convert from (z, y, x) to (x, y, z)
+        if self.label_type == 'full_coronary_tree':
+            label_path = f"{self.base_dir}/{self.data_original_dir}/all/{img_index}.label.nii.gz"
+
+            label_nii = sitk.ReadImage(label_path)
+            label_nii = spatial_resample_scan(label_nii, self.voxel_spacing)
+            label = sitk.GetArrayFromImage(label_nii)
+            label = label.astype(np.bool) # Convert to boolean
+            # label = label.transpose(2, 1, 0) # Convert from (z, y, x) to (x, y, z)
+
+        # Load label (segmentation of left anterior descending artery)
+        elif self.label_type == 'LAD':
+            if self.subset == 'train':
+                label_path = f"{self.base_dir}/{self.dataset_processed_dir}/{self.train_labels_dir}/img{img_index}.nii.gz"
+            elif self.subset == 'test':
+                label_path = f"{self.base_dir}/{self.dataset_processed_dir}/{self.test_labels_dir}/img{img_index}.nii.gz"
+            
+            # Not necessary to resample or transpose, was already done when LAD was extracted
+            label_nii = sitk.ReadImage(label_path)
+            label = sitk.GetArrayFromImage(label_nii)
+            label = label.astype(np.bool) 
 
         # Load centerline (of left anterior descending artery)
         centerline_reader = vtk.vtkPolyDataReader()
@@ -74,28 +95,33 @@ class CoronaryArteryDataLoader(Dataset):
         # Extract points (physical coordinates) from the centerline
         points = centerline.GetPoints()
         num_points = points.GetNumberOfPoints()
-        centerline_points = np.array([points.GetPoint(i) for i in range(num_points)]) # [[x1, y1, z1], [x2, y2, z2], ...]
+        centerline_points = np.array([points.GetPoint(i) for i in range(num_points)])
 
         # Transform centerline points from physical coordinates to index coordinates
         centerline_indices = np.array([label_nii.TransformPhysicalPointToIndex(point) for point in centerline_points])
+        centerline_indices = centerline_indices[:, ::-1] # Convert from (x, y, z) to (z, y, x), i.e. [[z1, y1, x1], [z2, y2, x2], ...]
 
         # Extract the HU values of the centerline points
         scalars = centerline.GetPointData().GetScalars()
         centerline_values = np.array([scalars.GetValue(i) for i in range(num_points)])
 
+        print(f'centerline_indices: {centerline_indices[:10]}')
+        print(f'centerline_values: {centerline_values[:10]}')
+
         # Info about the sample
-        log.info("\n---------------------------------------- Info ------------------------------------------")
+        log.info("-------------------------------- Info -----------------------------------")
         log.info(f"Image index: {img_index}")
         log.info(f"Image shape: {img.shape}")
+        log.info(f'Label type: {self.label_type}')
         log.info(f"Label shape: {label.shape}")
         log.info(f"Unique values in label: {np.unique(label)}")
         log.info(f"Number of unique values in label: {len(np.unique(label))}")
         log.info(f"Number of centerline points: {num_points}")
         log.info(f"Min HU value: {np.min(centerline_values):.2f}, Max HU value: {np.max(centerline_values):.2f}")
-        log.info("-----------------------------------------------------------------------------------------\n")
+        log.info("-------------------------------------------------------------------------\n")
 
         # Debug: Comparison of centerline HU values with image HU values
-        log.info("\n--------------------------------- Debugging HU values ----------------------------------")
+        log.info("------------------------- Debugging HU values ---------------------------")
         number = 10
         start = centerline_indices[number]
         vtk_value = centerline_values[number]
@@ -104,13 +130,12 @@ class CoronaryArteryDataLoader(Dataset):
         log.info(f"Centerline point (index coordinates): {start}")
         log.info(f"HU value from centerline: {vtk_value:.2f}")
         log.info(f"HU value from image: {img_value}")
-        log.info("----------------------------------------------------------------------------------------\n")
+        log.info("-------------------------------------------------------------------------\n")
 
         # Dictionary of sample data
         sample = {
                   'image': img, 
                   'label': label, 
-                  'centerline': centerline, 
                   'centerline_indices': centerline_indices,
                   'centerline_values': centerline_values,
                   'image_index': img_index, 

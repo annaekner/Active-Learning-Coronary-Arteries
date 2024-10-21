@@ -109,7 +109,6 @@ def segment_LAD(sample, config):
     # Load data from sample dictionary
     img = sample['image']
     label = sample['label']
-    centerline = sample['centerline']
     centerline_indices = sample['centerline_indices']
     centerline_values = sample['centerline_values']
     img_index = sample['image_index']
@@ -194,7 +193,7 @@ def segment_LAD(sample, config):
     segmentation = skimage.morphology.binary_closing(segmentation, footprint=skimage.morphology.ball(size))   
 
     # Convert from (x, y, z) back to (z, y, x)
-    segmentation = segmentation.transpose(2, 1, 0)
+    # segmentation = segmentation.transpose(2, 1, 0)
 
     return segmentation
 

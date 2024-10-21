@@ -16,6 +16,10 @@ data_processed:
   train_labels_dir: "labelsTr"
   test_labels_dir: "labelsTs"
 
+data_predicted:
+  dataset_dir: "nnUNet_predictions/Dataset001_Heart"
+  date: "11_10_2024"
+
 segmentation:
   patch_size: 5
   dilation_radius: 5

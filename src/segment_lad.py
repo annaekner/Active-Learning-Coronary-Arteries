@@ -34,6 +34,6 @@ def extract_lad_from_full_tree(sample, config):
     lad_segmentation = label * lad_dilated
 
     # Convert from (x, y, z) back to (z, y, x)
-    lad_segmentation = lad_segmentation.transpose(2, 1, 0)
+    # lad_segmentation = lad_segmentation.transpose(2, 1, 0)
     
     return lad_segmentation
