@@ -2,7 +2,7 @@ import hydra
 import logging
 
 from load_save_utilities import load_sample, load_prediction
-from tools import compute_evaluation_metrics
+from tools import compute_evaluation_metrics_wrtGTsegmentation, compute_evaluation_metrics_wrtGTcenterline
 
 # Set up logging
 log = logging.getLogger(__name__)
@@ -25,8 +25,11 @@ def main(config):
 
     assert ground_truth.shape == prediction.shape, 'Ground truth and prediction must have the same shape'
 
-    # 3. Evaluate the prediction
-    evaluation_metrics = compute_evaluation_metrics(ground_truth, prediction, log)
+    # 3. Evaluate the prediction (w.r.t the ground truth LAD segmentation, when available)
+    evaluation_metrics_segmentation = compute_evaluation_metrics_wrtGTsegmentation(ground_truth, prediction, log)
+
+    # 4. Evaluate the prediction (w.r.t. the ground truth LAD centerline, which is always available)
+    evaluation_metrics_centerline = compute_evaluation_metrics_wrtGTcenterline(centerline_indices, prediction, log)
 
     # TODO: Loop over all predictions and find the "worst" ones to use for re-training
     # ...
