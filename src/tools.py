@@ -1,14 +1,10 @@
 import numpy as np
 import SimpleITK as sitk
-from datetime import datetime
-from scipy.ndimage import distance_transform_edt
+import scipy.ndimage
 
 def spatial_resample_scan(image, desired_spacing):
     """
-    Resample a scan to iso-tropic pixel spacing
-    :param image: Original image with potentially anisotropic spacing
-    :param desired_spacing: desired voxel spacing
-    :return: resampled image
+    Resample scan to isotropic voxel spacing
     """
     current_n_vox = image.GetWidth()
     current_spacing = image.GetSpacing()
@@ -55,7 +51,7 @@ def compute_centerline_distance_map(sample):
         distance_map[tuple(idx)] = 1
     
     # Compute the distance transform
-    distance_map = distance_transform_edt(~distance_map)
+    distance_map = scipy.ndimage.distance_transform_edt(~distance_map)
 
     # Convert to float for better precision
     distance_map = distance_map.astype(np.float32)
@@ -64,3 +60,75 @@ def compute_centerline_distance_map(sample):
     # distance_map = distance_map.transpose(2, 1, 0)
 
     return distance_map
+
+def compute_connected_components(segmentation):
+    """
+    Compute the connected components of given segmentation (e.g. prediction).
+
+    Returns
+        num_connected_components: Number of connected components in the segmentation.
+
+        labeled_array: Array of same shape as the segmentation, where each voxel has a 
+                       value corresponding to which connected component it belongs to,
+                       either 0 = background, 1 = first connected component, 2 = second 
+                       connected component, and so on. I.e. if there is only one connected 
+                       component, background voxels have value 0 and connected component voxels have value 1.
+
+        largest_cc_array: Array of same shape as the segmentation, where each voxel has a 
+                          value of 1 if it belongs to the largest connected component, and 0 otherwise.
+    """
+    labeled_array, num_connected_components = scipy.ndimage.label(segmentation)
+    largest_cc_array = (labeled_array == 1).astype(int)
+
+    # TODO: Only consider connected components over a certain size, see Rasmus' code
+
+    return num_connected_components, labeled_array, largest_cc_array
+
+def compute_tp_fp_fn_tn(ground_truth, prediction):
+    """ 
+    Compute the number of true positives (TP), false positives (FP), 
+    false negatives (FN), and true negatives (TN) between the ground truth and the prediction of the LAD.
+    """
+    tp = np.sum(ground_truth & prediction)   # True positive (overlap between ground truth and prediction)
+    fp = np.sum(~ground_truth & prediction)  # False positive (prediction where there is no LAD)
+    fn = np.sum(ground_truth & ~prediction)  # False negative (no prediction where there is LAD)
+    tn = np.sum(~ground_truth & ~prediction) # True negative (no prediction where there is no LAD)
+
+    return tp, fp, fn, tn
+
+def compute_evaluation_metrics(ground_truth, prediction, log):
+    """ 
+    Compute metrics that compare the ground truth and the prediction.
+    """
+
+    # Compute true positives, false positives, false negatives, and true negatives
+    tp, fp, fn, tn = compute_tp_fp_fn_tn(ground_truth, prediction)
+
+    # DICE and IoU scores
+    DICE = 2 * tp / (2 * tp + fp + fn)
+    IoU = tp / (tp + fp + fn)
+    
+    # Connected components of prediction
+    num_connected_components, labeled_array, largest_cc_array = compute_connected_components(prediction)
+
+    # Check overlap with centerline
+
+    # TODO: Log warning if more than one connected component
+    # TODO: Log warning if low dice score
+    # TODO: Log warning if low overlap with centerline
+
+    # Print evaluation metrics
+    log.info(f'--------------------------- Evaluation metrics -----------------------------')
+    log.info(f'DICE: {DICE:.4f}')
+    log.info(f'IoU: {IoU:.4f}')
+    log.warning(f'Number of connected components: {num_connected_components}') if num_connected_components > 1 \
+        else log.info(f'Number of connected components: {num_connected_components}')
+    log.info(f'----------------------------------------------------------------------------')
+
+    evaluation_metrics = {
+                          'DICE': DICE, 
+                          'IoU': IoU, 
+                          'num_connected_components': num_connected_components}
+    
+    return evaluation_metrics
+
