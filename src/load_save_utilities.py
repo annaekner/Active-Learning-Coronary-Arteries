@@ -1,6 +1,8 @@
+import vtk
 import numpy as np
 import SimpleITK as sitk
 from datetime import datetime
+from vtkmodules.util.numpy_support import numpy_to_vtk
 
 from tools import spatial_resample_scan
 from data_loader import CoronaryArteryDataLoader
@@ -125,3 +127,48 @@ def save_distance_map(distance_map, sample, config, subset = 'train', output_pat
 
     # Write the distance map image to file
     sitk.WriteImage(distance_map_nii, output_path)
+
+def save_prediction_centerline_to_vtk(prediction_centerline_indices, reference_nii, img_index, config):
+    """ 
+    Save the centerline from the LAD segmentation prediction to a VTK file.
+
+    Args 
+        prediction_centerline_indices: Indices of the centerline in the predicted LAD segmentation (numpy array of [z, y, x] index coordinates)
+        reference_nii: Predicted LAD segmentation (SimpleITK image, .nii.gz) as reference to convert the indices to physical points
+        output_filename: Path to the output VTK file
+    """
+    # Get configuration settings
+    base_dir = f'{config.base_settings.base_dir}'
+    centerline_prediction_dir = f'{config.centerline_predictions.dir}'
+    date = f'{config.centerline_predictions.date}'
+    file_name = f'img{img_index}_lad_centerline_from_prediction.vtk'
+    output_filename = f'{base_dir}/{centerline_prediction_dir}/{date}/{file_name}'
+
+    # Convert (z, y, x) to (x, y, z) for VTK compatibility
+    prediction_centerline_indices = prediction_centerline_indices[:, [2, 1, 0]] 
+
+    prediction_centerline_physical_points = np.array([reference_nii.TransformContinuousIndexToPhysicalPoint(point.tolist()) for point in prediction_centerline_indices])
+    
+    points_vtk = vtk.vtkPoints()
+    points_vtk.SetData(numpy_to_vtk(prediction_centerline_physical_points))
+
+    # Create a vtkPolyLine to represent the centerline
+    polyline = vtk.vtkPolyLine()
+    polyline.GetPointIds().SetNumberOfIds(len(prediction_centerline_indices))
+    for i in range(len(prediction_centerline_indices)):
+        polyline.GetPointIds().SetId(i, i)
+
+    # Create a vtkCellArray to store the lines in
+    cells = vtk.vtkCellArray()
+    cells.InsertNextCell(polyline)
+
+    # Create a vtkPolyData to hold the geometry and topology
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points_vtk)
+    polydata.SetLines(cells)
+
+    # Write the vtkPolyData to a VTK file
+    writer = vtk.vtkPolyDataWriter()
+    writer.SetFileName(output_filename)
+    writer.SetInputData(polydata)
+    writer.Write()

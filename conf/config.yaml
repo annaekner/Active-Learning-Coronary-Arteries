@@ -24,7 +24,8 @@ data_predicted:
 
 centerline_predictions:
   dir: "centerline_predictions"
-  tolerance: 1
+  date: "28_10_2024"
+  tolerance: 1.4
 
 segmentation:
   dilation_radius: 5
