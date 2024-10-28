@@ -109,6 +109,9 @@ class CoronaryArteryDataLoader(Dataset):
         centerline_indices = np.array([label_nii.TransformPhysicalPointToIndex(point) for point in centerline_points])
         centerline_indices = centerline_indices[:, ::-1] # Convert from (x, y, z) to (z, y, x), i.e. [[z1, y1, x1], [z2, y2, x2], ...]
 
+        # Number of unique centerline indices
+        num_unique_centerline_indices = np.unique(centerline_indices, axis = 0).shape[0]
+
         # Extract the HU values of the centerline points
         scalars = centerline.GetPointData().GetScalars()
         centerline_values = np.array([scalars.GetValue(i) for i in range(num_points)])
@@ -121,7 +124,7 @@ class CoronaryArteryDataLoader(Dataset):
         log.info(f'Label type: {self.label_type}')
         log.info(f"Unique values in label: {np.unique(label)}")
         log.info(f"Number of unique values in label: {len(np.unique(label))}")
-        log.info(f"Number of centerline points: {num_points}")
+        log.info(f"Number of unique centerline points: {num_unique_centerline_indices}")
         log.info(f"Min HU value: {np.min(centerline_values):.2f}, Max HU value: {np.max(centerline_values):.2f}")
         log.info("-------------------------------------------------------------------------\n")
 

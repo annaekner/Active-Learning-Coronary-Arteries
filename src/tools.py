@@ -175,6 +175,7 @@ def compute_evaluation_metrics_wrtGTsegmentation(ground_truth_segmentation, pred
 
     # Print evaluation metrics
     log.info(f'-------------- Evaluation metrics (w.r.t GT LAD segmentation) --------------')
+    log.info(f'Image index: {img_index}')
     log.info(f'DICE: {DICE:.4f}')
     log.info(f'IoU: {IoU:.4f}')
     log.info(f'----------------------------------------------------------------------------\n')
@@ -203,7 +204,7 @@ def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, 
     # Get tolerance from config
     tolerance = config.centerline_predictions.tolerance
 
-    # Check overlap with centerline
+    # Get unique indices of the ground truth centerline
     ground_truth_centerline_indices = np.unique(ground_truth_centerline_indices, axis = 0)
 
     # Compute the distances from the ground truth centerline to the prediction centerline
@@ -213,9 +214,10 @@ def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, 
                                                                                prediction_centerline_indices, 
                                                                                config)
     
-    # Print evaluation metrics
+    # Log evaluation metrics
     log.info(f'--------------- Evaluation metrics (w.r.t GT LAD centerline) ---------------')
-    log.warning(f'Number of connected components: {num_connected_components} (expected was 1)') if num_connected_components > 1 \
+    log.info(f'Image index: {img_index}')
+    log.warning(f'Number of connected components: {num_connected_components} (image {img_index}') if num_connected_components > 1 \
         else log.info(f'Number of connected components: {num_connected_components}')
     log.info(f'Number of points in predicted centerline: {len(prediction_centerline_indices)}')
     log.info(f'Number of points in ground truth centerline: {len(ground_truth_centerline_indices)}')
@@ -226,6 +228,57 @@ def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, 
     log.info(f'----------------------------------------------------------------------------\n')
 
     evaluation_metrics = {
-                          'num_connected_components': num_connected_components}
+                          'num_connected_components': num_connected_components,
+                          'predicted_centerline_coverage_of_ground_truth_centerline': p_covered_1,
+                          'ground_truth_centerline_coverage_of_predicted_centerline': p_covered_2,
+                          'combined_centerline_dice_score': path_dice,
+                          }
     
     return evaluation_metrics
+
+def select_sample_for_retraining(evaluation_metrics_all, selection_method, log, config):
+    """
+    Select sample for retraining based on the evaluation metrics of all predictions.
+
+    Args
+        evaluation_metrics_all: Nested dictionary of evaluation metrics for all predictions.
+        selection_method: Method for selecting the sample for retraining ('worst', 'best', 'random').
+    """
+    # List of samples for retraining
+    samples_considered_for_retraining = []
+    
+    # Find all predictions with more than one connected component (if any)
+    for img_index in evaluation_metrics_all:
+        if evaluation_metrics_all[img_index]['num_connected_components'] > 1:
+            samples_considered_for_retraining.append(img_index)
+    
+    # If no predictions had > 1 connected component, all predictions are considered for retraining
+    if not samples_considered_for_retraining:
+        samples_considered_for_retraining = list(evaluation_metrics_all.keys())
+
+    # print(f'Samples considered for retraining: {samples_considered_for_retraining}')
+
+    if selection_method == 'worst':
+        # Select sample with the lowest combined centerline "DICE" score
+        sample_for_retraining = min(samples_considered_for_retraining, key=lambda x: evaluation_metrics_all[x]['combined_centerline_dice_score'])
+
+    elif selection_method == 'best':
+        # Select sample with the highest combined centerline "DICE" score
+        sample_for_retraining = max(samples_considered_for_retraining, key=lambda x: evaluation_metrics_all[x]['combined_centerline_dice_score'])
+
+    elif selection_method == 'random':
+        # Select random sample
+        sample_for_retraining = np.random.default_rng(seed = 0).choice(samples_considered_for_retraining)
+
+    retraining = {
+                  'sample_for_retraining': sample_for_retraining,
+                  'selection_method': selection_method,
+                  'num_connected_components': evaluation_metrics_all[sample_for_retraining]["num_connected_components"],
+                  'predicted_centerline_coverage_of_ground_truth_centerline': evaluation_metrics_all[sample_for_retraining]["predicted_centerline_coverage_of_ground_truth_centerline"],
+                  'ground_truth_centerline_coverage_of_predicted_centerline': evaluation_metrics_all[sample_for_retraining]["ground_truth_centerline_coverage_of_predicted_centerline"],
+                  'combined_centerline_dice_score': evaluation_metrics_all[sample_for_retraining]["combined_centerline_dice_score"],
+                 }
+
+    return retraining
+
+
