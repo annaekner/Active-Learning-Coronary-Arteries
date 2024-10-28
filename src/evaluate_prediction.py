@@ -21,15 +21,15 @@ def main(config):
     centerline_indices = sample['centerline_indices']
 
     # 2. Load the predicted LAD segmentation
-    prediction = load_prediction(img_index, config)
+    prediction, prediction_nii = load_prediction(img_index, config)
 
     assert ground_truth.shape == prediction.shape, 'Ground truth and prediction must have the same shape'
 
     # 3. Evaluate the prediction (w.r.t the ground truth LAD segmentation, when available)
-    evaluation_metrics_segmentation = compute_evaluation_metrics_wrtGTsegmentation(ground_truth, prediction, log)
+    evaluation_metrics_segmentation = compute_evaluation_metrics_wrtGTsegmentation(ground_truth, prediction, prediction_nii, img_index, log, config)
 
     # 4. Evaluate the prediction (w.r.t. the ground truth LAD centerline, which is always available)
-    evaluation_metrics_centerline = compute_evaluation_metrics_wrtGTcenterline(centerline_indices, prediction, log)
+    evaluation_metrics_centerline = compute_evaluation_metrics_wrtGTcenterline(centerline_indices, prediction, prediction_nii, img_index, log, config)
 
     # TODO: Loop over all predictions and find the "worst" ones to use for re-training
     # ...

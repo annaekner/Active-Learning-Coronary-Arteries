@@ -100,7 +100,7 @@ def compute_tp_fp_fn_tn(ground_truth, prediction):
 
     return tp, fp, fn, tn
 
-def compute_centerline_from_prediction(prediction):
+def compute_centerline_from_prediction(prediction, prediction_nii, img_index, config):
     """
     Compute the centerline from the predicted LAD segmentation using skeletonization.
     """
@@ -111,18 +111,59 @@ def compute_centerline_from_prediction(prediction):
     prediction_centerline_indices = np.argwhere(prediction_centerline)
 
     # Save the prediction centerline to a VTK file
-    # TODO: The result is way off compared to the ground truth centerline, why?
-    # save_prediction_centerline_to_vtk(prediction_centerline_indices, '../prediction_centerline_img7.vtk')
+    base_dir = f'{config.base_settings.base_dir}'
+    centerline_prediction_dir = f'{config.centerline_predictions.dir}'
+    file_name = f'img{img_index}_lad_centerline_from_prediction.vtk'
+
+    save_prediction_centerline_to_vtk(prediction_centerline_indices, prediction_nii, f'{base_dir}/{centerline_prediction_dir}/{file_name}')
 
     return prediction_centerline_indices
 
-def save_prediction_centerline_to_vtk(prediction_centerline_indices, output_filename):
-    # Convert (z, y, x) to (x, y, z) for VTK compatibility
-    # prediction_centerline_indices = prediction_centerline_indices[:, [2, 1, 0]]
+# def save_prediction_centerline_to_vtk(prediction_centerline_indices, output_filename):
+#     # Convert (z, y, x) to (x, y, z) for VTK compatibility
+#     # TODO: I don't think this should be necessary??
+#     # prediction_centerline_indices = prediction_centerline_indices[:, [2, 1, 0]]
 
-    # Create a vtkPoints object and set the points
-    points = vtk.vtkPoints()
-    points.SetData(numpy_to_vtk(prediction_centerline_indices, deep=True))
+#     # NOTE: TransformContinuousIndexToPhysicalPoint
+#     # Write that one to .vtk
+#     # points_
+
+#     # Create a vtkPoints object and set the points
+#     points = vtk.vtkPoints()
+#     points.SetData(numpy_to_vtk(prediction_centerline_indices, deep=True))
+
+#     # Create a vtkPolyLine to represent the centerline
+#     polyline = vtk.vtkPolyLine()
+#     polyline.GetPointIds().SetNumberOfIds(len(prediction_centerline_indices))
+#     for i in range(len(prediction_centerline_indices)):
+#         polyline.GetPointIds().SetId(i, i)
+
+#     # Create a vtkCellArray to store the lines in
+#     cells = vtk.vtkCellArray()
+#     cells.InsertNextCell(polyline)
+
+#     # Create a vtkPolyData to hold the geometry and topology
+#     polydata = vtk.vtkPolyData()
+#     polydata.SetPoints(points)
+#     polydata.SetLines(cells)
+
+#     # Write the vtkPolyData to a VTK file
+#     writer = vtk.vtkPolyDataWriter()
+#     writer.SetFileName(output_filename)
+#     writer.SetInputData(polydata)
+#     writer.Write()
+
+def save_prediction_centerline_to_vtk(prediction_centerline_indices, reference_nii, output_filename):
+    # reference: nii.gz file of predicted LAD segmentation
+
+    # Convert (z, y, x) to (x, y, z) for VTK compatibility
+    # TODO: I don't think this should be necessary??
+    prediction_centerline_indices = prediction_centerline_indices[:, [2, 1, 0]] 
+
+    prediction_centerline_physical_points = np.array([reference_nii.TransformContinuousIndexToPhysicalPoint(point.tolist()) for point in prediction_centerline_indices])
+    
+    points_vtk = vtk.vtkPoints()
+    points_vtk.SetData(numpy_to_vtk(prediction_centerline_physical_points))
 
     # Create a vtkPolyLine to represent the centerline
     polyline = vtk.vtkPolyLine()
@@ -136,7 +177,7 @@ def save_prediction_centerline_to_vtk(prediction_centerline_indices, output_file
 
     # Create a vtkPolyData to hold the geometry and topology
     polydata = vtk.vtkPolyData()
-    polydata.SetPoints(points)
+    polydata.SetPoints(points_vtk)
     polydata.SetLines(cells)
 
     # Write the vtkPolyData to a VTK file
@@ -144,12 +185,16 @@ def save_prediction_centerline_to_vtk(prediction_centerline_indices, output_file
     writer.SetFileName(output_filename)
     writer.SetInputData(polydata)
     writer.Write()
+    
 
-def path_coverage_and_path_dice(path_1, path_2, tolerance=1):
+def path_coverage_and_path_dice(path_1, path_2, config):
     """
     Compute the coverage of path 1 and path 2 and the combined path dice score.
     Paths are given as numpy arrays of the form [[z1, y1, x1], [z2, y2, x2], ...].
     """
+    # Get tolerance from config
+    tolerance = config.centerline_predictions.tolerance
+
     # Build KDTree for path_2
     tree_2 = scipy.spatial.cKDTree(path_2)
 
@@ -187,14 +232,19 @@ def path_coverage_and_path_dice(path_1, path_2, tolerance=1):
     return p_covered_1, p_covered_2, path_dice
 
 
-def compute_evaluation_metrics_wrtGTsegmentation(ground_truth, prediction, log):
+def compute_evaluation_metrics_wrtGTsegmentation(ground_truth_segmentation, prediction, prediction_nii, img_index, log, config):
     """ 
     Compute metrics that compare the ground truth LAD segmentation and the predicted LAD segmentation.
     This can only be done when the ground truth LAD segmentation is available, which is not always the case.
+
+    Args
+        ground_truth_segmentation: Ground truth LAD segmentation (binary mask, numpy array)
+        prediction: Predicted LAD segmentation (binary mask, numpy array)
+        prediction_nii: Predicted LAD segmentation (SimpleITK image, .nii.gz)
     """
 
     # Compute true positives, false positives, false negatives, and true negatives
-    tp, fp, fn, tn = compute_tp_fp_fn_tn(ground_truth, prediction)
+    tp, fp, fn, tn = compute_tp_fp_fn_tn(ground_truth_segmentation, prediction)
 
     # DICE and IoU scores
     DICE = 2 * tp / (2 * tp + fp + fn)
@@ -204,7 +254,7 @@ def compute_evaluation_metrics_wrtGTsegmentation(ground_truth, prediction, log):
     log.info(f'-------------- Evaluation metrics (w.r.t GT LAD segmentation) --------------')
     log.info(f'DICE: {DICE:.4f}')
     log.info(f'IoU: {IoU:.4f}')
-    log.info(f'----------------------------------------------------------------------------')
+    log.info(f'----------------------------------------------------------------------------\n')
 
     evaluation_metrics = {
                           'DICE': DICE, 
@@ -213,10 +263,15 @@ def compute_evaluation_metrics_wrtGTsegmentation(ground_truth, prediction, log):
     
     return evaluation_metrics
 
-def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, prediction, log):
+def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, prediction, prediction_nii, img_index, log, config):
     """ 
     Compute metrics that compare the ground truth LAD centerline and the predicted LAD segmentation.
     This can always be done, since the LAD centerline is always available.
+
+    Args
+        ground_truth_centerline_indices: Ground truth LAD centerline (numpy array of [z, y, x] index coordinates)
+        prediction: Predicted LAD segmentation (binary mask, numpy array)
+        prediction_nii: Predicted LAD segmentation (SimpleITK image, .nii.gz)
     """
 
     # Connected components of prediction
@@ -224,20 +279,16 @@ def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, 
 
     # Check overlap with centerline
     ground_truth_centerline_indices = np.unique(ground_truth_centerline_indices, axis = 0)
-    print(f'Ground truth centerline indices: \n{ground_truth_centerline_indices}')
 
-    prediction_centerline_indices = compute_centerline_from_prediction(prediction)
-    print(f'Prediction centerline indices: \n{ground_truth_centerline_indices}')
+    prediction_centerline_indices = compute_centerline_from_prediction(prediction, prediction_nii, img_index, config)
 
     # Compute the distances from the ground truth centerline to the prediction centerline
     # p_covered_1: How well the predicted centerline covers the ground truth centerline
     # p_covered_2: How well the ground truth centerline covers the predicted centerline
     p_covered_1, p_covered_2, path_dice = path_coverage_and_path_dice(ground_truth_centerline_indices, 
                                                                       prediction_centerline_indices, 
-                                                                      tolerance=1)
+                                                                      config)
     
-    # TODO: Log warning if low overlap with centerline
-
     # Print evaluation metrics
     log.info(f'--------------- Evaluation metrics (w.r.t GT LAD centerline) ---------------')
     log.warning(f'Number of connected components: {num_connected_components} (expected was 1)') if num_connected_components > 1 \
@@ -247,7 +298,7 @@ def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, 
     log.info(f'Predicted centerline coverage of the ground truth centerline: {p_covered_1:.4f}')
     log.info(f'Ground truth centerline coverage of the predicted centerline: {p_covered_2:.4f}')
     log.info(f'Combined centerline "DICE" score: {path_dice:.4f}')
-    log.info(f'----------------------------------------------------------------------------')
+    log.info(f'----------------------------------------------------------------------------\n')
 
     evaluation_metrics = {
                           'num_connected_components': num_connected_components}

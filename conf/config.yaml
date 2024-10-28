@@ -22,5 +22,9 @@ data_predicted:
   dataset_dir: "nnUNet_predictions/Dataset001_Heart"
   date: "11_10_2024"
 
+centerline_predictions:
+  dir: "centerline_predictions"
+  tolerance: 1
+
 segmentation:
   dilation_radius: 5

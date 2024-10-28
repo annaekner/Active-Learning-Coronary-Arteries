@@ -32,7 +32,7 @@ def load_prediction(img_index, config):
     prediction = sitk.GetArrayFromImage(prediction_nii)
     prediction = prediction.astype(np.bool)
 
-    return prediction
+    return prediction, prediction_nii
 
 def save_resampled_img(img_index, config, subset = 'train'):
     """ Save resampled image (isotropic voxel spacing) as .nii.gz file """
