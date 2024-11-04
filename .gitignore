@@ -148,6 +148,7 @@ wandb/
 
 # Specific file extions
 *.pt
+*.pth
 *.csv
 *.zip
 *.npy

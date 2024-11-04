@@ -20,12 +20,20 @@ data_processed:
 
 data_predicted:
   dataset_dir: "nnUNet_predictions/Dataset001_Heart"
-  date: "11_10_2024"
+  # date: "01_11_2024"
+  date: "28_10_2024"
 
 centerline_predictions:
   dir: "centerline_predictions"
+  # date: "01_11_2024"
   date: "28_10_2024"
   tolerance: 1.4
 
 segmentation:
   dilation_radius: 5
+
+connected_components:
+  min_size: 30
+
+retraining:
+  num_samples_per_retraining: 3
