@@ -1,6 +1,7 @@
 base_settings:
   base_dir: "/work3/s193396"
   version: "v1"
+  iteration: 0
   seed: 0
 
 dataset_settings:
@@ -31,3 +32,16 @@ data_predicted:
 
 data_results:
   dir: "nnUNet_results"
+
+data_centerlines:
+  dir: "centerlines"
+
+centerline_predictions:
+  tolerance: 1.4
+
+connected_components:
+  min_size: 30
+
+retraining:
+  num_samples_per_retraining: 3
+  selection_method: 'worst'

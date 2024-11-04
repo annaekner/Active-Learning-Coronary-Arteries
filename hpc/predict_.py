@@ -5,6 +5,7 @@ def predict(config, log):
     # Configuration settings
     base_dir = config.base_settings.base_dir
     version = config.base_settings.version
+    iteration = config.base_settings.iteration
     dataset_name = config.dataset_settings.dataset_name
     dataset_id = config.dataset_settings.dataset_id
 
@@ -18,11 +19,11 @@ def predict(config, log):
 
     # Input and output directory
     input_dir = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{test_images_dir}"
-    output_dir = f"{base_dir}/{version}/{data_predicted_dir}/{dataset_name}"
+    output_dir = f"{base_dir}/{version}/{data_predicted_dir}/{dataset_name}/iteration_{iteration}"
 
     # Run the nnUNetv2_predict command
     # EXAMPLE: nnUNetv2_predict -i /work3/s193396/original/nnUNet_raw/Dataset001_Heart/imagesTs 
-    #                           -o /work3/s193396/original/nnUNet_predictions/Dataset001_Heart/11_10_2024/ 
+    #                           -o /work3/s193396/original/nnUNet_predictions/Dataset001_Heart/iteration_0/ 
     #                           -d 1 -c 3d_fullres -tr nnUNetTrainer_50epochs -f all
 
     predict_command = [
