@@ -95,7 +95,7 @@ def select_samples_for_retraining(evaluation_metrics_all, config, log):
     log.info(f'-------------------------------- Re-training -------------------------------')
     log.info(f'Number of samples evaluated: {num_samples}')
     log.info(f'Number of samples selected for re-training: {num_samples_per_retraining}')
-    log.info(f'Selection method: {retraining["selection_method"]}')
+    log.info(f'Selection method: "{retraining["selection_method"]}"')
     log.info(f'Image indices of samples selected for re-training: {retraining["samples_for_retraining"]}')
     log.info(f'Number of connected components: {retraining["num_connected_components"]}')
     log.info(f'Predicted centerline coverage of the ground truth centerline: {retraining["predicted_centerline_coverage_of_ground_truth_centerline"]}')

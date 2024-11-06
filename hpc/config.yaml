@@ -1,47 +1,42 @@
 base_settings:
-  base_dir: "/work3/s193396"
-  version: "v1"
-  iteration: 0
+  base_dir: /work3/s193396
+  iteration: 3
   seed: 0
-
-dataset_settings:
-  dataset_name: "Dataset001_Heart"
-  dataset_id: 1
-
-train_settings:
-  network_configuration: "3d_fullres"
-  trainer: "nnUNetTrainer_50epochs"
-  # trainer: "nnUNetTrainer_250epochs_NoMirroring"
-  fold: "all"
-  num_processors: 4
-
-data_raw:
-  dir: "nnUNet_raw"
-  train_images_dir: "imagesTr"
-  test_images_dir: "imagesTs"
-  train_labels_dir: "labelsTr"
-  test_labels_dir: "labelsTs"
-
-data_preprocessed:
-  dir: "nnUNet_preprocessed"
-  dataset_json: "dataset.json"
-  dataset_plans: "nnUNetPlans.json"
-
-data_predicted:
-  dir: "nnUNet_predictions"
-
-data_results:
-  dir: "nnUNet_results"
-
-data_centerlines:
-  dir: "centerlines"
-
+  version: v1
 centerline_predictions:
   tolerance: 1.4
-
 connected_components:
   min_size: 30
-
+data_centerlines:
+  dir: centerlines
+data_info:
+  dir: info
+data_predicted:
+  dir: nnUNet_predictions
+data_preprocessed:
+  dataset_json: dataset.json
+  dataset_plans: nnUNetPlans.json
+  dir: nnUNet_preprocessed
+data_raw:
+  dir: nnUNet_raw
+  test_images_dir: imagesTs
+  test_labels_dir: labelsTs
+  train_images_dir: imagesTr
+  train_labels_dir: labelsTr
+data_results:
+  dir: nnUNet_results
+dataset_settings:
+  dataset_id: 1
+  dataset_name: Dataset001_Heart
+home_settings:
+  config_dir: conf/config.yaml
+  home_dir: /zhome/cd/e/145569
+  special_course_dir: Documents/special-course
 retraining:
   num_samples_per_retraining: 3
-  selection_method: 'worst'
+  selection_method: worst
+train_settings:
+  fold: all
+  network_configuration: 3d_fullres
+  num_processors: 4
+  trainer: nnUNetTrainer_50epochs

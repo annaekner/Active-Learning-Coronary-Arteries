@@ -19,25 +19,28 @@ def main(config):
     set_environment_variables(config, log)
 
     # Number of iterations
-    num_iterations = 1
+    num_iterations = 2
 
     for iteration in range(num_iterations):
 
+        # TODO: Step 0 that checks that all files in /work3/ are as they should be
+
         # --------------------------------------- STEP 1: Plan and preprocess --------------------------------------- #
         # Run nnUNetv2_plan_and_preprocess command
-        # plan_and_preprocess(config, log)
+        plan_and_preprocess(config, log)
 
         # ---------------------------------------------- STEP 2: Train ---------------------------------------------- #
         # Run nnUNetv2_train command
-        # train(config, log)
+        train(config, log)
 
         # --------------------------------------------- STEP 3: Predict --------------------------------------------- #
-        # predict(config, log)
+        # Run nnUNetv2_predict command
+        predict(config, log)
 
         # -------------------------------------------- STEP 4: Evaluate --------------------------------------------- #
         evaluation_metrics_all = evaluate(config, log)
 
-        # # ----------------------------------- STEP 5: Select sample for retraining ---------------------------------- #
+        # # ----------------------------------- STEP 5: Select samples for retraining ---------------------------------- #
         retraining = select_samples_for_retraining(evaluation_metrics_all, config, log)
 
         # -------------------------------------- STEP 6: Update and move files -------------------------------------- #
