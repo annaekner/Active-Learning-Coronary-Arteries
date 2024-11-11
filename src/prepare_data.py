@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 def main(config):
     
     # TODO: These two variables need to be set!
-    index = 0          # Set the index (in file_list.txt) of the sample to load
+    index = 14          # Set the index (in file_list.txt) of the sample to load
     subset = 'train'    # Set subset to either 'train' or 'test'
 
     # Load the sample
