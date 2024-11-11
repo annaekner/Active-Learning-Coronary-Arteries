@@ -39,7 +39,7 @@ def predict(config, log):
     log.info(f"Predict command: {predict_command}")
 
     try:
-        result = subprocess.run(predict_command, check=True, capture_output=True, text=True)
+        result = subprocess.run(predict_command, check=True, capture_output=True, text=True, encoding='utf-8')
         log.info(f"Command output: {result.stdout}")
         log.info(f"Command error (if any): {result.stderr}")
         

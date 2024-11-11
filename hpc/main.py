@@ -19,11 +19,11 @@ def main(config):
     set_environment_variables(config, log)
 
     # Number of iterations
-    num_iterations = 2
+    num_iterations = 5
 
     for iteration in range(num_iterations):
 
-        # TODO: Step 0 that checks that all files in /work3/ are as they should be
+        log.info(f"Starting iteration {iteration}....")
 
         # --------------------------------------- STEP 1: Plan and preprocess --------------------------------------- #
         # Run nnUNetv2_plan_and_preprocess command

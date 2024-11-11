@@ -11,6 +11,8 @@ def evaluate(config, log):
     # Nested dictionary for storing evaluation metrics of all predictions
     evaluation_metrics_all = {}
 
+    log.info(f'--------------- Iteration: {config.base_settings.iteration} ----------------')
+    
     for i, img_index in enumerate(predictions_img_indices):
 
         # 1. Load prediction segmentation (as numpy array and nii.gz)

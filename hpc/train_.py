@@ -21,7 +21,7 @@ def train(config, log):
     log.info(f"Train command: {train_command}")
 
     try:
-        result = subprocess.run(train_command, check=True, capture_output=True, text=True)
+        result = subprocess.run(train_command, check=True, capture_output=True, text=True, encoding='utf-8')
         log.info(f"Command output: {result.stdout}")
         log.info(f"Command error (if any): {result.stderr}")
         

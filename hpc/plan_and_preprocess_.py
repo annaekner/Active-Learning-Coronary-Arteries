@@ -20,7 +20,7 @@ def plan_and_preprocess(config, log):
     log.info(f"Plan and preprocess command: {plan_and_preprocess_command}")
     
     try:
-        result = subprocess.run(plan_and_preprocess_command, check=True, capture_output=True, text=True)
+        result = subprocess.run(plan_and_preprocess_command, check=True, capture_output=True, text=True, encoding='utf-8')
         log.info(f"Command output: {result.stdout}")
         log.info(f"Command error (if any): {result.stderr}")
         
