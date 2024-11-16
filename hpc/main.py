@@ -35,16 +35,16 @@ def main(config):
 
         # --------------------------------------------- STEP 3: Predict --------------------------------------------- #
         # Run nnUNetv2_predict command
-        predict(config, log)
+        predict(config, log, iteration)
 
         # -------------------------------------------- STEP 4: Evaluate --------------------------------------------- #
-        evaluation_metrics_all = evaluate(config, log)
+        evaluation_metrics_all = evaluate(config, log, iteration)
 
         # # ----------------------------------- STEP 5: Select samples for retraining ---------------------------------- #
         retraining = select_samples_for_retraining(evaluation_metrics_all, config, log)
 
         # -------------------------------------- STEP 6: Update and move files -------------------------------------- #
-        move_files(retraining, config, log)
+        move_files(retraining, config, log, iteration)
 
 if __name__ == "__main__":
     main()

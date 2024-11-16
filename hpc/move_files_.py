@@ -5,11 +5,10 @@ import json
 import yaml
 import shutil
 
-def move_files(retraining, config, log):
+def move_files(retraining, config, log, iteration):
 
     # Configuration settings
     base_dir = config.base_settings.base_dir
-    iteration = config.base_settings.iteration
     version = config.base_settings.version
     dataset_name = config.dataset_settings.dataset_name
 
@@ -73,7 +72,7 @@ def move_files(retraining, config, log):
 
         # Step 3: Move from imagesTs --> imagesTr
         os.rename(f"{images_input_dir}/{filename}_0000.nii.gz", f"{images_output_dir}/{filename}_0000.nii.gz")
-        # os.rename(f"{images_input_dir}/{filename}_0001.nii.gz", f"{images_output_dir}/{filename}_0001.nii.gz")
+        os.rename(f"{images_input_dir}/{filename}_0001.nii.gz", f"{images_output_dir}/{filename}_0001.nii.gz")
 
         # # Step 4: Move from labelsTs --> labelsTr
         os.rename(f"{labels_input_dir}/{filename}.nii.gz", f"{labels_output_dir}/{filename}.nii.gz")
@@ -85,7 +84,8 @@ def move_files(retraining, config, log):
         data = yaml.load(yamlFile, Loader=yaml.FullLoader)
 
         # Get the current iteration number
-        current_iteration = data["base_settings"]["iteration"]
+        # current_iteration = data["base_settings"]["iteration"]
+        current_iteration = iteration # NOTE: Hotfix since changes to config.yaml were not saved
 
         # Next iteration number
         next_iteration = current_iteration + 1

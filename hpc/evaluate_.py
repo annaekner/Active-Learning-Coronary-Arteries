@@ -3,20 +3,23 @@ import glob
 
 from tools import list_of_all_predictions, load_prediction_segmentation, load_ground_truth_centerline, compute_centerline_from_prediction, compute_evaluation_metrics_wrtGTcenterline
 
-def evaluate(config, log):
+def evaluate(config, log, iteration):
+
+    # Get iteration number
+    # iteration = config.base_settings.iteration
 
     # Get image indices of all predictions
-    predictions_img_indices = list_of_all_predictions(config, log)
+    predictions_img_indices = list_of_all_predictions(config, log, iteration)
 
     # Nested dictionary for storing evaluation metrics of all predictions
     evaluation_metrics_all = {}
 
-    log.info(f'--------------- Iteration: {config.base_settings.iteration} ----------------')
+    log.info(f'------------------------- Iteration: {iteration} ---------------------------')
     
     for i, img_index in enumerate(predictions_img_indices):
 
         # 1. Load prediction segmentation (as numpy array and nii.gz)
-        prediction_segmentation, prediction_segmentation_nii = load_prediction_segmentation(img_index, config, log)
+        prediction_segmentation, prediction_segmentation_nii = load_prediction_segmentation(img_index, config, log, iteration)
 
         # 2. Load ground truth centerline
         ground_truth_centerline_indices = load_ground_truth_centerline(img_index, prediction_segmentation_nii, config, log)

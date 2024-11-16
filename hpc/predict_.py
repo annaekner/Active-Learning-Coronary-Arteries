@@ -1,11 +1,11 @@
 import subprocess
 
-def predict(config, log):
+def predict(config, log, iteration):
 
     # Configuration settings
     base_dir = config.base_settings.base_dir
     version = config.base_settings.version
-    iteration = config.base_settings.iteration
+    # iteration = config.base_settings.iteration
     dataset_name = config.dataset_settings.dataset_name
     dataset_id = config.dataset_settings.dataset_id
 

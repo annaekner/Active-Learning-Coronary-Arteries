@@ -6,7 +6,7 @@ import skimage
 import numpy as np
 import SimpleITK as sitk
 
-def list_of_all_predictions(config, log):
+def list_of_all_predictions(config, log, iteration):
     """ 
     Create a list with image indices of all predictions found
     """
@@ -14,7 +14,7 @@ def list_of_all_predictions(config, log):
     # Configuration settings
     base_dir = config.base_settings.base_dir
     version = config.base_settings.version
-    iteration = config.base_settings.iteration
+    # iteration = config.base_settings.iteration
     dataset_name = config.dataset_settings.dataset_name
     data_predicted_dir = config.data_predicted.dir
 
@@ -27,7 +27,7 @@ def list_of_all_predictions(config, log):
 
     return predictions_img_indices
 
-def load_prediction_segmentation(img_index, config, log):
+def load_prediction_segmentation(img_index, config, log, iteration):
     """ 
     Load the prediction (LAD segmentation) as both a numpy array and a nii.gz
     """
@@ -35,7 +35,7 @@ def load_prediction_segmentation(img_index, config, log):
     # Configuration settings
     base_dir = config.base_settings.base_dir
     version = config.base_settings.version
-    iteration = config.base_settings.iteration
+    # iteration = config.base_settings.iteration
     dataset_name = config.dataset_settings.dataset_name
     data_predicted_dir = config.data_predicted.dir      # Predicted LAD segmentations
 
