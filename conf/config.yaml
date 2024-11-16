@@ -23,6 +23,9 @@ data_predicted:
   # date: "01_11_2024"
   date: "28_10_2024"
 
+centerlines:
+  dir: "centerlines"
+
 centerline_predictions:
   dir: "centerline_predictions"
   # date: "01_11_2024"

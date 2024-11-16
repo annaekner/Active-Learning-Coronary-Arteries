@@ -1,4 +1,5 @@
 import vtk
+import shutil
 import numpy as np
 import SimpleITK as sitk
 from datetime import datetime
@@ -172,3 +173,16 @@ def save_prediction_centerline_to_vtk(prediction_centerline_indices, reference_n
     writer.SetFileName(output_filename)
     writer.SetInputData(polydata)
     writer.Write()
+
+def copy_centerline_vtk_file(img_index, config):
+    """ Copy centerline VTK file to centerlines directory """
+
+    # Configuration settings
+    base_dir = config.base_settings.base_dir
+    input_centerlines_dir = config.data_loader.data_processed_dir
+    output_centerlines_dir = config.centerlines.dir
+    
+    input_centerlines_path = f"{base_dir}/{input_centerlines_dir}/{img_index}.img/{img_index}_lad_centerline_hu.vtk"
+    output_centerlines_path = f"{base_dir}/{output_centerlines_dir}/img{img_index}_lad_centerline.vtk"
+
+    shutil.copy2(input_centerlines_path, output_centerlines_path)
