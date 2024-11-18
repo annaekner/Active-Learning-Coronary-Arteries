@@ -3,6 +3,7 @@ import SimpleITK as sitk
 import scipy.ndimage
 import scipy.spatial
 import skimage.morphology
+import skimage.metrics
 
 def spatial_resample_scan(image, desired_spacing):
     """
@@ -190,6 +191,9 @@ def compute_evaluation_metrics_wrtGTsegmentation(ground_truth_segmentation, pred
     # DICE and IoU scores
     DICE = 2 * tp / (2 * tp + fp + fn)
     IoU = tp / (tp + fp + fn)
+
+    # Hausdorff distance
+    hausdorff_distance = skimage.metrics.hausdorff_distance(ground_truth_segmentation, prediction)
 
     # Print evaluation metrics
     log.info(f'-------------- Evaluation metrics (w.r.t GT LAD segmentation) --------------')

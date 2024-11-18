@@ -43,7 +43,7 @@ def train(config, log, iteration):
             f"{network_configuration}",
             f"{fold}",
             "-tr", f"{trainer}",
-            "-pretrained_weights", f"{checkpoint_path}"
+            "-pretrained_weights", f"{checkpoint_path}"  
         ]
 
         log.info(f"Training with pre-trained weights")

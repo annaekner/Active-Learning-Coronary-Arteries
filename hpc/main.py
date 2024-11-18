@@ -55,7 +55,7 @@ def main(config):
         evaluation_metrics_unlabeled = evaluate_unlabeled_set(config, log, iteration)
 
         # ----------------------------------- STEP 5: Select samples for retraining --------------------------------- #
-        # retraining = select_samples_for_retraining(evaluation_metrics_unlabeled, config, log)
+        retraining = select_samples_for_retraining(evaluation_metrics_unlabeled, config, log, iteration)
 
         # -------------------------------------- STEP 6: Prepare next iteration ------------------------------------- #
         # prepare_next_iteration(retraining, config, log, iteration)

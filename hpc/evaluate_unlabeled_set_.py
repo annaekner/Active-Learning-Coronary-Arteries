@@ -34,15 +34,15 @@ def evaluate_unlabeled_set(config, log, iteration):
     num_samples_unlabeled = len(unlabeled_img_indices)
 
     log.info(f"Number of samples in the unlabeled set: {num_samples_unlabeled}")
-    log.info(f"Image indices of samples in the unlabeled set: {unlabeled_img_indices}")
+    # log.info(f"Image indices of samples in the unlabeled set: {unlabeled_img_indices}")
 
     # Nested dictionary for storing evaluation metrics of all unlabeled predictions
     evaluation_metrics_unlabeled = {}
 
     # Add info to the dictionary
     evaluation_metrics_unlabeled["info"] = {
-                                       "Number of samples in unlabeled set": num_samples_unlabeled,
-                                       "Image indices of samples in the unlabeled set": unlabeled_img_indices
+                                       "num_samples_unlabeled": num_samples_unlabeled,
+                                       "img_indices_unlabeled": unlabeled_img_indices
                                        }
     
     # Set logging level to WARNING
@@ -75,7 +75,7 @@ def evaluate_unlabeled_set(config, log, iteration):
     with open(evaluation_path, 'w') as file:
         json.dump(evaluation_metrics_unlabeled, file, indent = 4)
 
-    log.info(f'Evaluations on unlabeled set saved to: "/iteration_{iteration}/{iterations_evaluations_dir}/{evaluation_filename}"')
+    log.info(f'Evaluations on unlabeled set saved to: "~/iteration_{iteration}/{iterations_evaluations_dir}/{evaluation_filename}"')
     log.info(f'----------------------------------------------------------------------------\n')
 
     return evaluation_metrics_unlabeled
