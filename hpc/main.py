@@ -2,12 +2,16 @@ import hydra
 import logging
 
 from set_environment_variables_ import set_environment_variables
+from check_data_files_ import check_data_files
+from prepare_initial_training_ import prepare_initial_training
+from prepare_current_iteration_ import prepare_current_iteration
 from plan_and_preprocess_ import plan_and_preprocess
 from train_ import train
 from predict_ import predict
-from evaluate_ import evaluate
+from evaluate_unlabeled_set_ import evaluate_unlabeled_set
+from evaluate_test_set_ import evaluate_test_set
 from select_samples_for_retraining_ import select_samples_for_retraining
-from move_files_ import move_files
+from prepare_next_iteration_ import prepare_next_iteration
 
 # Set up logging
 log = logging.getLogger(__name__)
@@ -18,33 +22,43 @@ def main(config):
     # Export environment variables 
     set_environment_variables(config, log)
 
+    # Check that the data files look fine
+    # check_data_files(config, log)
+
+    # Run nnUNetv2_plan_and_preprocess command (on the full dataset)
+    # plan_and_preprocess(config, log)
+
+    # Prepare files for initial training
+    # prepare_initial_training(config, log)
+
     # Number of iterations
-    num_iterations = 5
+    num_iterations = 1
 
     for iteration in range(num_iterations):
+        iteration = 1
 
-        log.info(f"Starting iteration {iteration}....")
-
-        # --------------------------------------- STEP 1: Plan and preprocess --------------------------------------- #
-        # Run nnUNetv2_plan_and_preprocess command
-        plan_and_preprocess(config, log)
+        # ------------------------------------ STEP 1: Prepare current iteration ------------------------------------ #
+        # prepare_current_iteration(config, log, iteration)
 
         # ---------------------------------------------- STEP 2: Train ---------------------------------------------- #
         # Run nnUNetv2_train command
-        train(config, log)
+        # train(config, log, iteration)
 
         # --------------------------------------------- STEP 3: Predict --------------------------------------------- #
         # Run nnUNetv2_predict command
-        predict(config, log, iteration)
+        # predict(config, log, iteration)
 
-        # -------------------------------------------- STEP 4: Evaluate --------------------------------------------- #
-        evaluation_metrics_all = evaluate(config, log, iteration)
+        # ---------------------------------------- STEP 4: Evaluate test set ---------------------------------------- #
+        evaluation_metrics_test = evaluate_test_set(config, log, iteration)
 
-        # # ----------------------------------- STEP 5: Select samples for retraining ---------------------------------- #
-        retraining = select_samples_for_retraining(evaluation_metrics_all, config, log)
+        # -------------------------------------- STEP 5: Evaluate unlabeled set ------------------------------------- #
+        evaluation_metrics_unlabeled = evaluate_unlabeled_set(config, log, iteration)
 
-        # -------------------------------------- STEP 6: Update and move files -------------------------------------- #
-        move_files(retraining, config, log, iteration)
+        # ----------------------------------- STEP 5: Select samples for retraining --------------------------------- #
+        # retraining = select_samples_for_retraining(evaluation_metrics_unlabeled, config, log)
+
+        # -------------------------------------- STEP 6: Prepare next iteration ------------------------------------- #
+        # prepare_next_iteration(retraining, config, log, iteration)
 
 if __name__ == "__main__":
     main()

@@ -15,6 +15,8 @@ def select_samples_for_retraining(evaluation_metrics_all, config, log):
     # List of samples considered for retraining
     samples_considered_for_retraining = []
 
+    # TODO: Test samples should not be eligible for re-sampling!!!
+
     # All samples sorted by number of connected components (in ascending and descending order)
     num_samples = len(evaluation_metrics_all)
     all_samples = list(evaluation_metrics_all.keys())

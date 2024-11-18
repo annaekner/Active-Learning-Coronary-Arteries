@@ -33,4 +33,8 @@ def evaluate(config, log, iteration):
         # 5. Store evaluation metrics in nested dictionary
         evaluation_metrics_all[img_index] = evaluation_metrics_centerline
 
+    # TODO: This does not print, for whatever reason?? 
+    log.info("Nested dictionary of all evaluations (evaluation_metrics_all):")
+    log.info(evaluation_metrics_all)
+
     return evaluation_metrics_all

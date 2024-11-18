@@ -19,7 +19,7 @@ def list_of_all_predictions(config, log, iteration):
     data_predicted_dir = config.data_predicted.dir
 
     # Find predictions in folder
-    predictions_folder_path = f"{base_dir}/{version}/{data_predicted_dir}/{dataset_name}/iteration_{iteration}/"
+    predictions_folder_path = f"{base_dir}/{version}/{data_predicted_dir}/{dataset_name}/"
     all_predictions_filepaths = glob.glob(f'{predictions_folder_path}/*.nii.gz')
 
     # Get image indices of predictions
@@ -40,7 +40,7 @@ def load_prediction_segmentation(img_index, config, log, iteration):
     data_predicted_dir = config.data_predicted.dir      # Predicted LAD segmentations
 
     # Load the prediction
-    prediction_path = f"{base_dir}/{version}/{data_predicted_dir}/{dataset_name}/iteration_{iteration}/img{img_index}.nii.gz"
+    prediction_path = f"{base_dir}/{version}/{data_predicted_dir}/{dataset_name}/img{img_index}.nii.gz"
 
     # Convert from .nii.gz file to numpy array
     prediction_nii = sitk.ReadImage(prediction_path)
@@ -206,8 +206,7 @@ def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, 
     # Log evaluation metrics
     log.info(f'--------------- Evaluation metrics (w.r.t GT LAD centerline) ---------------')
     log.info(f'Image index: {img_index}')
-    log.warning(f'Number of connected components: {num_connected_components} (image {img_index})') if num_connected_components > 1 \
-        else log.info(f'Number of connected components: {num_connected_components}')
+    log.info(f'Number of connected components: {num_connected_components}')
     log.info(f'Minimum size for connected components: {min_size} voxels')
     log.info(f'Number of points in predicted centerline: {len(prediction_centerline_indices)}')
     log.info(f'Number of points in ground truth centerline: {len(ground_truth_centerline_indices)}')
@@ -219,9 +218,9 @@ def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, 
 
     evaluation_metrics = {
                           'num_connected_components': num_connected_components,
-                          'predicted_centerline_coverage_of_ground_truth_centerline': p_covered_1,
-                          'ground_truth_centerline_coverage_of_predicted_centerline': p_covered_2,
-                          'combined_centerline_dice_score': path_dice,
+                          'predicted_centerline_coverage_of_ground_truth_centerline': round(p_covered_1, 4),
+                          'ground_truth_centerline_coverage_of_predicted_centerline': round(p_covered_2, 4),
+                          'combined_centerline_dice_score': round(path_dice, 4),
                           }
     
     return evaluation_metrics

@@ -1,22 +1,25 @@
 base_settings:
   base_dir: /work3/s193396
-  iteration: 3
   seed: 0
-  version: v1
+  version: initial_2_onechannel_full_dataset_test
+  num_channels: 1
 centerline_predictions:
   tolerance: 1.4
 connected_components:
   min_size: 30
 data_centerlines:
   dir: centerlines
-data_info:
-  dir: info
+data_iterations:
+  dir: iterations
+  results_dir: results
+  predictions_dir: predictions
+  evaluations_dir: evaluations
 data_predicted:
   dir: nnUNet_predictions
 data_preprocessed:
+  dir: nnUNet_preprocessed
   dataset_json: dataset.json
   dataset_plans: nnUNetPlans.json
-  dir: nnUNet_preprocessed
 data_raw:
   dir: nnUNet_raw
   test_images_dir: imagesTs
@@ -40,3 +43,6 @@ train_settings:
   network_configuration: 3d_fullres
   num_processors: 4
   trainer: nnUNetTrainer_50epochs
+  num_samples_initial_training: 3
+test_settings:
+  num_samples_test: 10
