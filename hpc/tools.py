@@ -14,7 +14,6 @@ def list_of_all_predictions(config, log, iteration):
     # Configuration settings
     base_dir = config.base_settings.base_dir
     version = config.base_settings.version
-    # iteration = config.base_settings.iteration
     dataset_name = config.dataset_settings.dataset_name
     data_predicted_dir = config.data_predicted.dir
 
@@ -209,6 +208,38 @@ def compute_centerline_coverage_and_dice(path_1, path_2, config):
     path_dice = float(n_covered_1 + n_covered_2) / float(n_points_1 + n_points_2)
     return p_covered_1, p_covered_2, path_dice
 
+def compute_entropy(img_index, config, log):
+    """
+    Compute uncertainty (entropy) of a given sample from the prediction probabilities.
+
+    Low entropy means low uncertainty (the prediction is confident)
+    High entropy, i.e. close to 0.5 for binary segmentation, means high uncertainty (the prediction is not confident)
+    """
+
+    # Configuration settings
+    base_dir = config.base_settings.base_dir
+    version = config.base_settings.version
+    dataset_name = config.dataset_settings.dataset_name
+    data_predicted_dir = config.data_predicted.dir
+
+    # Load the probabilities
+    npz_path = f"{base_dir}/{version}/{data_predicted_dir}/{dataset_name}/img{img_index}.npz"
+    npz_file = np.load(npz_path)
+    probabilities = npz_file['probabilities'] # Shape (2, z, y, x)
+
+    # Scipy computation
+    # probabilities = probabilities.transpose(1, 2, 3, 0)  # Shape (z, y, x, 2)
+    # voxelwise_entropy = scipy.stats.entropy(probabilities, axis=-1)  # Compute entropy along the last axis (class axis) 
+
+    # Manual computation 
+    # voxelwise_entropy = -np.sum(probabilities * np.log(np.clip(probabilities, 1e-10, None)), axis = 0)
+    voxelwise_entropy = -np.sum(probabilities * np.log(probabilities + 1e-20), axis=0) / np.log(2)
+
+    # Compute image-level entropy (mean of voxel-wise entropies)
+    entropy = np.mean(voxelwise_entropy)
+
+    return float(entropy)
+
 def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, prediction_centerline_indices, prediction_segmentation, img_index, log, config):
     """ 
     Compute metrics that compare the ground truth LAD centerline and the predicted LAD segmentation.
@@ -237,6 +268,18 @@ def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, 
                                                                                prediction_centerline_indices, 
                                                                                config)
     
+    # Convert number of connected components (num_cc) to weight (w): 
+    # w = 1 - (num_cc * 0.1)
+    weight = 1 - (num_connected_components * 0.1)
+
+    # Multiply the combined DICE score with the weight
+    # Samples with only one connected component will have high weighted scores, 
+    # samples with multiple connected components will have low weighted scores, 
+    weighted_score = weight * path_dice
+
+    # Compute uncertainty (entropy)
+    entropy = compute_entropy(img_index, config, log)
+    
     # Log evaluation metrics
     log.info(f'--------------- Evaluation metrics (w.r.t GT LAD centerline) ---------------')
     log.info(f'Image index: {img_index}')
@@ -248,6 +291,8 @@ def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, 
     log.info(f'Predicted centerline coverage of the ground truth centerline: {p_covered_1:.4f}')
     log.info(f'Ground truth centerline coverage of the predicted centerline: {p_covered_2:.4f}')
     log.info(f'Combined centerline "DICE" score: {path_dice:.4f}')
+    log.info(f'Weighted centerline "DICE" score: {weighted_score:.4f}')
+    log.info(f'Entropy (uncertainty): {entropy:.8f}')
     log.info(f'----------------------------------------------------------------------------\n')
 
     evaluation_metrics = {
@@ -255,6 +300,8 @@ def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, 
                           'predicted_centerline_coverage_of_ground_truth_centerline': round(p_covered_1, 4),
                           'ground_truth_centerline_coverage_of_predicted_centerline': round(p_covered_2, 4),
                           'combined_centerline_dice_score': round(path_dice, 4),
+                          'weighted_centerline_dice_score': round(weighted_score, 4),
+                          'entropy': round(entropy, 8),
                           }
     
     return evaluation_metrics

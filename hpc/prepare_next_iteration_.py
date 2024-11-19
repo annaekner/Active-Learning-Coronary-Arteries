@@ -2,8 +2,10 @@ import os
 import re
 import glob
 import json
-import yaml
 import shutil
+import numpy as np
+
+import tools
 
 def prepare_next_iteration(retraining, config, log, iteration):
 
@@ -12,10 +14,7 @@ def prepare_next_iteration(retraining, config, log, iteration):
     version = config.base_settings.version
     dataset_name = config.dataset_settings.dataset_name
     num_channels = config.base_settings.num_channels
-
-    home_dir = config.home_settings.home_dir
-    special_course_dir = config.home_settings.special_course_dir
-    config_dir = config.home_settings.config_dir
+    seed = config.base_settings.seed
 
     data_raw_dir = config.data_raw.dir
     train_images_dir = config.data_raw.train_images_dir
@@ -23,35 +22,31 @@ def prepare_next_iteration(retraining, config, log, iteration):
     train_labels_dir = config.data_raw.train_labels_dir
     test_labels_dir = config.data_raw.test_labels_dir
 
+    data_preprocessed_dir = config.data_preprocessed.dir
     data_predicted_dir = config.data_predicted.dir
     data_results_dir = config.data_results.dir
 
-    data_info_dir = config.data_info.dir
+    data_iterations_dir = config.data_iterations.dir
+    iterations_results_dir = config.data_iterations.results_dir
+    iterations_predictions_dir = config.data_iterations.predictions_dir
 
     network_configuration = config.train_settings.network_configuration
     trainer = config.train_settings.trainer
     fold = config.train_settings.fold
 
-    # Input and output directory for images and labelsx
-    images_input_dir = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{test_images_dir}"
-    images_output_dir = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{train_images_dir}"
-    labels_input_dir = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{test_labels_dir}"
-    labels_output_dir = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{train_labels_dir}"
+    num_samples_test = config.test_settings.num_samples_test
 
-    # Paths to .json and .yaml files 
-    config_yaml_path = f"{home_dir}/{special_course_dir}/{config_dir}"
+    # Image indices of retraining samples
+    img_indices_retraining = retraining["img_indices_retraining"]
+    num_samples_for_retraining = len(img_indices_retraining)
+
+    log.info(f'-------------------------- Prepare next iteration --------------------------')
+
+    # -------------------------------- STEP 1: Update numTraining in dataset.json ------------------------------- #
+    # Paths to dataset.json files 
     dataset_json_nnUNetpreprocessed_path = f"{base_dir}/{version}/{data_preprocessed_dir}/{dataset_name}/dataset.json"
     dataset_json_nnUNetraw_path = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/dataset.json"
 
-    # Path to nnUNet_results subfolder that needs to be emptied
-    subfolder_name = f"{trainer}__nnUNetPlans__{network_configuration}" 
-    subfolder_path = f"{base_dir}/{version}/{data_results_dir}/{dataset_name}/{subfolder_name}"
-
-    # Step 1: Get image indices of retraining samples
-    samples_for_retraining = retraining["samples_for_retraining"]
-    num_samples_for_retraining = len(samples_for_retraining)
-
-    # Step 2:  numTraining in dataset.json (both in nnUNet_preprocessed and nnUNet_raw) 
     # nnUNet_preprocessed/dataset.json
     with open(dataset_json_nnUNetpreprocessed_path, "r+") as jsonFile:
 
@@ -68,8 +63,10 @@ def prepare_next_iteration(retraining, config, log, iteration):
         json.dump(data, jsonFile)
         jsonFile.truncate()
 
+    log.info(f'Number of training samples changed from {num_current_training_samples} to {num_current_training_samples + num_samples_for_retraining} (nnUNet_preprocessed/dataset.json)')
+
     # nnUNet_raw/dataset.json
-    with open(dataset_json_raw_path, "r+") as jsonFile:
+    with open(dataset_json_nnUNetraw_path, "r+") as jsonFile:
 
         # Get the dataset.json content
         data = json.load(jsonFile)
@@ -84,55 +81,93 @@ def prepare_next_iteration(retraining, config, log, iteration):
         json.dump(data, jsonFile)
         jsonFile.truncate()
 
-    for img_index in samples_for_retraining:
+    log.info(f'Number of training samples changed from {num_current_training_samples} to {num_current_training_samples + num_samples_for_retraining} (nnUNet_preprocessed/dataset.json)')
+
+    # ------------ STEP 2: Move retraining samples from imagesTs -> imagesTr and labelsTs -> labelsTr ----------- #
+    # Input and output directory for images and labels
+    images_input_dir = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{test_images_dir}"
+    images_output_dir = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{train_images_dir}"
+    labels_input_dir = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{test_labels_dir}"
+    labels_output_dir = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{train_labels_dir}"
+
+    for img_index in img_indices_retraining:
 
         # Filename
         filename = f"img{img_index}"
 
-        # Step 3: Move from imagesTs --> imagesTr
+        # Move from imagesTs -> imagesTr
         os.rename(f"{images_input_dir}/{filename}_0000.nii.gz", f"{images_output_dir}/{filename}_0000.nii.gz")
 
         if num_channels == 2:
             os.rename(f"{images_input_dir}/{filename}_0001.nii.gz", f"{images_output_dir}/{filename}_0001.nii.gz")
 
-        # # Step 4: Move from labelsTs --> labelsTr
+        # Move from labelsTs -> labelsTr
         os.rename(f"{labels_input_dir}/{filename}.nii.gz", f"{labels_output_dir}/{filename}.nii.gz")
 
-    # Step 5: Increment iteration number
-    current_iteration = iteration
-    next_iteration = current_iteration + 1
+    log.info(f'Re-training samples moved from imagesTs -> imagesTr, and labelsTs -> labelsTr')
 
-    # Step 6: Move training info files (progress.png and training_log) 
-    subfolder_files = glob.glob(f"{subfolder_path}/fold_{fold}/*")
-    progress_png_filename = next((re.search(r'[^/]+$', file).group() for file in subfolder_files if re.search(r'progress\.png$', file)), None)
-    training_log_filename = next((re.search(r'[^/]+$', file).group() for file in subfolder_files if re.search(r'training_log.*$', file.split('/')[-1])), None)
+    # -------------------- STEP 3: Move files from nnUNet_predictions to /iterations/ folder -------------------- #
+    # Path to the nnUNet_predictions folder
+    nnUNet_predictions_folder = f"{base_dir}/{version}/{data_predicted_dir}/{dataset_name}"
 
-    # Path to info folder where training info files need to be moved to
-    info_output_path = f"{base_dir}/{version}/{data_info_dir}/{dataset_name}/iteration_{current_iteration}"
+    # Path to /iterations/predictions/ folder where the predictions on the test set need to be moved to
+    output_path = f"{base_dir}/{version}/{data_iterations_dir}/iteration_{iteration}/{iterations_predictions_dir}"
 
-    os.rename(f"{subfolder_path}/fold_{fold}/{progress_png_filename}", f"{info_output_path}/{progress_png_filename}")
-    os.rename(f"{subfolder_path}/fold_{fold}/{training_log_filename}", f"{info_output_path}/{training_log_filename}")
+    # Get image indices of the test set
+    predictions_img_indices = tools.list_of_all_predictions(config, log, iteration)
+    test_img_indices = np.random.default_rng(seed = seed).choice(predictions_img_indices, 
+                                                                 size = num_samples_test, 
+                                                                 replace = False)
+    
+    test_img_indices = test_img_indices.tolist()
+    test_img_indices = sorted(test_img_indices)
 
-    # Step 7: Remove the nnUNet_results subfolder
+    for img_index in test_img_indices:
+
+        # Move from nnUNet_results -> /iterations/predictions/
+        os.rename(f"{nnUNet_predictions_folder}/img{img_index}.nii.gz", f"{output_path}/img{img_index}.nii.gz")
+
+    log.info(f'Predictions of the test set have been moved to "~/iteration_{iteration}/{iterations_predictions_dir}"')
+
+    # ------------------------------ STEP 4: Empty the nnUNet_predictions subfolder ----------------------------- #
+    # Remaining files in nnUNet_predictions folder
+    remaining_files = glob.glob(f'{nnUNet_predictions_folder}/*')
+
+    for file in remaining_files:
+
+        # Remove file
+        os.remove(file)
+
+    log.info(f'Folder "{data_predicted_dir}/{dataset_name}" has been emptied')
+
+    # ---------------------- STEP 5: Move files from nnUNet_results to /iterations/ folder ---------------------- #
+    # Path to the nnUNet_results subfolder
+    trainer_name = f"{trainer}__nnUNetPlans__{network_configuration}" 
+    nnUNet_results_subfolder = f"{base_dir}/{version}/{data_results_dir}/{dataset_name}/{trainer_name}"
+
+    # Filenames of the files to be moved
+    subfolder_files = [os.path.basename(x) for x in glob.glob(f"{nnUNet_results_subfolder}/fold_{fold}/*")]
+
+    checkpoint_best_filename = next((filename for filename in subfolder_files if re.compile(r'.*_best\.pth$').match(filename)), None)
+    checkpoint_final_filename = next((filename for filename in subfolder_files if re.compile(r'.*_final\.pth$').match(filename)), None)
+    progress_png_filename = next((filename for filename in subfolder_files if re.compile(r'.*\.png$').match(filename)), None)
+    training_log_filename = next((filename for filename in subfolder_files if re.compile(r'.*\.txt$').match(filename)), None)
+    
+    # Path to /iterations/results/ folder where training info files need to be moved to
+    output_path = f"{base_dir}/{version}/{data_iterations_dir}/iteration_{iteration}/{iterations_results_dir}"
+
+    os.rename(f"{nnUNet_results_subfolder}/fold_{fold}/{checkpoint_best_filename}", f"{output_path}/{checkpoint_best_filename}")
+    os.rename(f"{nnUNet_results_subfolder}/fold_{fold}/{checkpoint_final_filename}", f"{output_path}/{checkpoint_final_filename}")
+    os.rename(f"{nnUNet_results_subfolder}/fold_{fold}/{progress_png_filename}", f"{output_path}/{progress_png_filename}")
+    os.rename(f"{nnUNet_results_subfolder}/fold_{fold}/{training_log_filename}", f"{output_path}/{training_log_filename}")
+
+    log.info(f'Files "{checkpoint_best_filename}", "{checkpoint_final_filename}", "{progress_png_filename}" and "{training_log_filename}" have been moved to "~/iteration_{iteration}/{iterations_results_dir}"')
+
+    # ------------------------------- STEP 6: Remove the nnUNet_results subfolder ------------------------------- #
     try: 
-        shutil.rmtree(subfolder_path)
+        shutil.rmtree(nnUNet_results_subfolder)
     except OSError as e:
         log.error(f'Error trying to remove directory: {e.filename}, {e.strerror}')
-    
-    # # Step 8: Create a new folder in data_info_dir for next iteration
-    # new_info_iteration_dir = f"{base_dir}/{version}/{data_info_dir}/{dataset_name}/iteration_{next_iteration}"
-    # os.mkdir(new_info_iteration_dir)
 
-    # Step 9: Create a new folder in data_predicted_dir for next iteration
-    new_predicted_iteration_dir = f"{base_dir}/{version}/{data_predicted_dir}/{dataset_name}/iteration_{next_iteration}"
-    os.mkdir(new_predicted_iteration_dir)
-
-    log.info(f'------------------------------- Moving files -------------------------------')
-    log.info(f'Number of training samples changed from {num_current_training_samples} to {num_current_training_samples + num_samples_for_retraining} (dataset.json)')
-    log.info(f'Re-training samples moved from imagesTs -> imagesTr, and labelsTs -> labelsTr')
-    log.info(f'Iteration number changed from {current_iteration} to {next_iteration} (config.yaml)')
-    log.info(f'Files "{progress_png_filename}" and "{training_log_filename}" have been moved to "{data_info_dir}/{dataset_name}/iteration_{current_iteration}"')
-    log.info(f'Subfolder "{data_results_dir}/{dataset_name}/{subfolder_name}" has been removed')
-    log.info(f'New folder "{data_predicted_dir}/iteration_{next_iteration}" created for the next iteration')
-    log.info(f'New folder "{data_info_dir}/iteration_{next_iteration}" created for the next iteration')
+    log.info(f'Subfolder "{data_results_dir}/{dataset_name}/{trainer_name}" has been removed')
     log.info(f'----------------------------------------------------------------------------\n')

@@ -1,7 +1,7 @@
 base_settings:
   base_dir: /work3/s193396
   seed: 0
-  version: initial_2_onechannel_full_dataset_test
+  version: experiment_worst_70samples_v1
   num_channels: 1
 centerline_predictions:
   tolerance: 1.4

@@ -18,7 +18,7 @@ def train(config, log, iteration):
     # Path of the checkpoint to train from
     previous_iteration = iteration - 1
     checkpoint_filename = f"checkpoint_final.pth"
-    checkpoint_path = f"{base_dir}/{version}/{data_iterations_dir}/{dataset_name}/iteration_{previous_iteration}/{iterations_results_dir}/{checkpoint_filename}"
+    checkpoint_path = f"{base_dir}/{version}/{data_iterations_dir}/iteration_{previous_iteration}/{iterations_results_dir}/{checkpoint_filename}"
 
     # Run the nnUNetv2_train command
     # EXAMPLE: nnUNetv2_train 1 3d_fullres all -tr nnUNetTrainer_50epochs

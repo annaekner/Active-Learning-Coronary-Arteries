@@ -70,7 +70,7 @@ def evaluate_unlabeled_set(config, log, iteration):
 
     # Save dictionary to .json file
     evaluation_filename = f"evaluation_unlabeled_set_iteration_{iteration}.json"
-    evaluation_path = f"{base_dir}/{version}/{data_iterations_dir}/{dataset_name}/iteration_{iteration}/{iterations_evaluations_dir}/{evaluation_filename}"
+    evaluation_path = f"{base_dir}/{version}/{data_iterations_dir}/iteration_{iteration}/{iterations_evaluations_dir}/{evaluation_filename}"
 
     with open(evaluation_path, 'w') as file:
         json.dump(evaluation_metrics_unlabeled, file, indent = 4)
