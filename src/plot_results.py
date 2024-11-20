@@ -33,6 +33,15 @@ def get_evaluations_from_json(experiments_dir, experiment):
     weighted_centerline_DICE_std = []
     entropy_std = []
 
+    # pseudo_std = 0.001
+    # DICE_std = [pseudo_std] * 5
+    # IoU_std = [pseudo_std] * 5
+    # Hausdorff_distance_std = [pseudo_std] * 5
+    # num_connected_components_std = [pseudo_std] * 5
+    # centerline_DICE_std = [pseudo_std] * 5
+    # weighted_centerline_DICE_std = [pseudo_std] * 5
+    # entropy_std = [pseudo_std] * 5
+
     for iteration in range(5):
 
         # Paths
@@ -108,9 +117,9 @@ def plot_evaluation_metric(all_evaluations, evaluation_metric):
     plt.figure(figsize=(10, 6))
 
     # Plot mean of evaluation metric
-    plt.plot(worst, label="Worst", marker='o', color='red')
-    plt.plot(best, label="Best", marker='o', color='green')
-    plt.plot(random, label="Random", marker='o', color='blue')
+    plt.plot(worst, label="Worst", color='red') #, marker='o')
+    plt.plot(best, label="Best", color='green') #, marker='o')
+    plt.plot(random, label="Random", color='blue') #, marker='o')
     plt.plot(full_dataset, label="Full dataset", linestyle = '--', color='grey')
 
     # Plot standard deviation of evaluation metric as shaded area
@@ -133,9 +142,9 @@ if __name__ == "__main__":
     experiments_dir = r"C:/Users/annae/OneDrive - Danmarks Tekniske Universitet/Speciale/Specialkursus/experiments"
 
     all_experiments = [
-                       "experiment_worst_70samples_v2",
-                       "experiment_best_70samples_v2",
-                       "experiment_random_70samples_v2",
+                       "experiment_worst_70samples_v1",
+                       "experiment_best_70samples_v1",
+                       "experiment_random_70samples_v1",
                        "experiment_full_dataset_70samples_v2",
                        ]
     
