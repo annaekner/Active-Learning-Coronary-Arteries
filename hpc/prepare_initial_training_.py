@@ -3,7 +3,7 @@ import re
 import json
 import numpy as np 
 
-def prepare_initial_training(config, log):
+def prepare_initial_training(test_img_indices, config, log):
 
     # Configuration settings
     base_dir = config.base_settings.base_dir
@@ -33,16 +33,34 @@ def prepare_initial_training(config, log):
     # List of all data sample image indices image indices of all data samples
     all_samples_file_names = os.listdir(labels_input_dir)
     all_samples_img_indices = [int(re.search(r'img(\d+)\.nii\.gz', file_name).group(1)) for file_name in all_samples_file_names]
-
-    # Total number of samples
     num_samples_total = len(all_samples_img_indices)
 
-    log.info(f"Total number of samples in the dataset: {num_samples_total}")
+    log.info(f"Total number of samples in the dataset: {num_samples_total} (including the test set)")
 
-    # Sample random image indices to be used for initial training
-    img_indices_initial_training = np.random.default_rng(seed = seed).choice(all_samples_img_indices, 
-                                                                             size = num_samples_initial_training, 
-                                                                             replace = False)
+    # # Remove image indices of test set from being eligible for initial training
+    # all_samples_img_indices = [index for index in all_samples_img_indices if index not in test_img_indices]
+    # num_samples_total = len(all_samples_img_indices)
+
+    # log.info(f"Total number of samples in the dataset: {num_samples_total} (excluding the test set)")
+
+    # ----------------------------------------------------------------------------------------------------------- #
+    # NOTE: OLD METHOD (sampling them randomly, meaning they vary across experiments)
+    # # Sample random image indices to be used for initial training
+    # img_indices_initial_training = np.random.default_rng(seed = seed).choice(all_samples_img_indices, 
+    #                                                                          size = num_samples_initial_training, 
+    #                                                                          replace = False)     
+
+    # NOTE: NEW METHOD (loading them from .txt file, meaning they are consistent across experiments)
+    # Load the image indices of initial training samples from .txt file
+    experiment_dir = f"{base_dir}/{version}"
+    txt_filename = "initial_training_img_indices.txt"
+    txt_path = f"{experiment_dir}/{txt_filename}"
+    
+    # Load the .txt file
+    with open(txt_path, "r") as file:
+
+        img_indices_initial_training = [int(line.strip()) for line in file]                                                                    
+    # ----------------------------------------------------------------------------------------------------------- #
 
     # Image indices of samples to be moved (all except those used for initial training)
     samples_to_be_moved_img_indices = [x for x in all_samples_img_indices if x not in img_indices_initial_training]

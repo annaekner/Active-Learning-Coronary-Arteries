@@ -4,31 +4,36 @@ import numpy as np
 
 import tools
 
-def evaluate_test_set(config, log, iteration):
+def evaluate_test_set(test_img_indices, config, log, iteration):
 
     # Configuration settings
     base_dir = config.base_settings.base_dir
     version = config.base_settings.version
     dataset_name = config.dataset_settings.dataset_name
     seed = config.base_settings.seed
+
     num_samples_test = config.test_settings.num_samples_test
+
+    data_raw_dir = config.data_raw.dir
 
     data_iterations_dir = config.data_iterations.dir
     iterations_evaluations_dir = config.data_iterations.evaluations_dir
 
     log.info(f'---------------------------- Evaluate test set -----------------------------')
 
-    # Get image indices of all predictions
-    predictions_img_indices = tools.list_of_all_predictions(config, log, iteration)
+    # Number of samples in the training set
+    dataset_json_nnUNetraw_path = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/dataset.json"
+    with open(dataset_json_nnUNetraw_path, "r+") as jsonFile:
 
-    # Sample random image indices for the test set
-    test_img_indices = np.random.default_rng(seed = seed).choice(predictions_img_indices, 
-                                                                 size = num_samples_test, 
-                                                                 replace = False)
-    
-    test_img_indices = test_img_indices.tolist()
-    test_img_indices = sorted(test_img_indices)
-    
+        # Get the dataset.json content
+        data = json.load(jsonFile)
+
+        # Number of training samples in current iteration
+        num_samples_train = data["numTraining"]
+
+    log.info(f"Number of samples in the training set: {num_samples_train}")
+
+    # Number of samples in the test set
     log.info(f"Number of samples in the test set: {num_samples_test}")
     # log.info(f"Image indices of samples in the test set: {test_img_indices}")
 
@@ -37,6 +42,7 @@ def evaluate_test_set(config, log, iteration):
 
     # Add info to the dictionary
     evaluation_metrics_test["info"] = {
+                                       "num_samples_train": num_samples_train,
                                        "num_samples_test": num_samples_test,
                                        "img_indices_test": test_img_indices
                                        }
@@ -68,9 +74,10 @@ def evaluate_test_set(config, log, iteration):
         evaluation_metrics_test[int(img_index)] = {**evaluation_metrics_segmentation, **evaluation_metrics_centerline}
 
     # 8. Compute mean of all evaluation metrics, and insert into nested dictionary
-    evaluation_metrics_list, evaluation_metrics_mean = tools.compute_mean_of_evaluation_metrics(evaluation_metrics_test, config, log)
+    evaluation_metrics_list, evaluation_metrics_mean, evaluation_metrics_std = tools.compute_mean_std_of_evaluation_metrics(evaluation_metrics_test, config, log)
     evaluation_metrics_test["evaluations_list"] = evaluation_metrics_list
     evaluation_metrics_test["evaluations_mean"] = evaluation_metrics_mean
+    evaluation_metrics_test["evaluations_std"] = evaluation_metrics_std
 
     # Set logging level to INFO
     log.setLevel(logging.INFO)

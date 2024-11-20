@@ -4,7 +4,7 @@ import numpy as np
 
 import tools
 
-def evaluate_unlabeled_set(config, log, iteration):
+def evaluate_unlabeled_set(test_img_indices, config, log, iteration):
 
     # Configuration settings
     base_dir = config.base_settings.base_dir
@@ -20,14 +20,6 @@ def evaluate_unlabeled_set(config, log, iteration):
 
     # Get image indices of all predictions
     predictions_img_indices = tools.list_of_all_predictions(config, log, iteration)
-
-    # Sample random image indices for the test set
-    test_img_indices = np.random.default_rng(seed = seed).choice(predictions_img_indices, 
-                                                                 size = num_samples_test, 
-                                                                 replace = False)
-    
-    test_img_indices = test_img_indices.tolist()
-    test_img_indices = sorted(test_img_indices)
 
     # Set the rest of the samples to be the unlabeled set
     unlabeled_img_indices = [x for x in predictions_img_indices if x not in test_img_indices]

@@ -7,7 +7,7 @@ import numpy as np
 
 import tools
 
-def prepare_next_iteration(retraining, config, log, iteration):
+def prepare_next_iteration(retraining, test_img_indices, config, log, iteration):
 
     # Configuration settings
     base_dir = config.base_settings.base_dir
@@ -113,21 +113,15 @@ def prepare_next_iteration(retraining, config, log, iteration):
     # Path to /iterations/predictions/ folder where the predictions on the test set need to be moved to
     output_path = f"{base_dir}/{version}/{data_iterations_dir}/iteration_{iteration}/{iterations_predictions_dir}"
 
-    # Get image indices of the test set
-    predictions_img_indices = tools.list_of_all_predictions(config, log, iteration)
-    test_img_indices = np.random.default_rng(seed = seed).choice(predictions_img_indices, 
-                                                                 size = num_samples_test, 
-                                                                 replace = False)
-    
-    test_img_indices = test_img_indices.tolist()
-    test_img_indices = sorted(test_img_indices)
+    # Only select the three first test set samples
+    selected_test_img_indices = test_img_indices[:3]
 
-    for img_index in test_img_indices:
+    for img_index in selected_test_img_indices:
 
         # Move from nnUNet_results -> /iterations/predictions/
         os.rename(f"{nnUNet_predictions_folder}/img{img_index}.nii.gz", f"{output_path}/img{img_index}.nii.gz")
 
-    log.info(f'Predictions of the test set have been moved to "~/iteration_{iteration}/{iterations_predictions_dir}"')
+    log.info(f'Predictions of images {selected_test_img_indices} from the test set have been moved to "~/iteration_{iteration}/{iterations_predictions_dir}"')
 
     # ------------------------------ STEP 4: Empty the nnUNet_predictions subfolder ----------------------------- #
     # Remaining files in nnUNet_predictions folder

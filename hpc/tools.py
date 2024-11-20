@@ -342,9 +342,9 @@ def compute_evaluation_metrics_wrtGTsegmentation(ground_truth_segmentation, pred
     
     return evaluation_metrics
 
-def compute_mean_of_evaluation_metrics(evaluation_metrics_test, config, log):
+def compute_mean_std_of_evaluation_metrics(evaluation_metrics_test, config, log):
     """ 
-    Compute the mean of the evaluation metrics for all samples in the test set
+    Compute the mean and standard deviation of the evaluation metrics for all samples in the test set
     """
 
     # Image indices of all test samples (as strings)
@@ -356,6 +356,7 @@ def compute_mean_of_evaluation_metrics(evaluation_metrics_test, config, log):
     # Prepare dictionaries
     evaluation_metrics_list = {key: [] for key in evaluation_metrics_keys}
     evaluation_metrics_mean = {f"{key}_mean": [] for key in evaluation_metrics_keys}
+    evaluation_metrics_std = {f"{key}_std": [] for key in evaluation_metrics_keys}
 
     for img_index in test_img_indices_str:
 
@@ -367,16 +368,18 @@ def compute_mean_of_evaluation_metrics(evaluation_metrics_test, config, log):
             # Append the metric value to the corresponding list in evaluation_metrics_list
             evaluation_metrics_list[key].append(evaluation_metrics_img[key])
     
-    # Compute the mean of each evaluation metric
+    # Compute the mean and std of each evaluation metric
     for key in evaluation_metrics_keys:
 
         # All values of each metric
         all_values = evaluation_metrics_list[key]
 
-        # Mean of all values
+        # Mean and std of all values
         mean_value = float(np.mean(all_values))
+        std_value = float(np.var(all_values))
 
-        # Append the mean metric value to evaluation_metrics_mean
+        # Append the mean and std metric value to dictionaries
         evaluation_metrics_mean[f"{key}_mean"] = round(mean_value, 4)
+        evaluation_metrics_std[f"{key}_std"] = round(std_value, 4)
 
-    return evaluation_metrics_list, evaluation_metrics_mean
+    return evaluation_metrics_list, evaluation_metrics_mean, evaluation_metrics_std
