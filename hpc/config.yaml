@@ -1,7 +1,7 @@
 base_settings:
   base_dir: /work3/s193396
   seed: 0
-  version: initial_2_onechannel_full_dataset_test
+  version: experiment_random_70samples_v5
   num_channels: 1
 centerline_predictions:
   tolerance: 1.4
@@ -37,7 +37,7 @@ home_settings:
   special_course_dir: Documents/special-course
 retraining:
   num_samples_per_retraining: 3
-  selection_method: worst
+  selection_method: random
 train_settings:
   fold: all
   network_configuration: 3d_fullres

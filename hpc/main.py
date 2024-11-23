@@ -24,32 +24,32 @@ def main(config):
     set_environment_variables(config, log)
 
     # Check that the data files look fine
-    check_data_files(config, log)
-
-    # Run nnUNetv2_plan_and_preprocess command (on the full dataset)
-    plan_and_preprocess(config, log)
+    # check_data_files(config, log)
 
     # Load the test set image indices (consist across iterations and experiments)
     test_img_indices = load_test_set(config, log)
 
     # Prepare files for initial training
-    prepare_initial_training(test_img_indices, config, log)
+    # prepare_initial_training(test_img_indices, config, log)
 
     # Number of iterations
-    num_iterations = 5
+    num_iterations = 1
 
     for iteration in range(num_iterations):
 
+        # Run nnUNetv2_plan_and_preprocess command (only on training images in this iteration)
+        # plan_and_preprocess(config, log)
+
         # ------------------------------------ STEP 1: Prepare current iteration ------------------------------------ #
-        prepare_current_iteration(config, log, iteration)
+        # prepare_current_iteration(config, log, iteration)
 
         # ---------------------------------------------- STEP 2: Train ---------------------------------------------- #
         # Run nnUNetv2_train command
-        train(config, log, iteration)
+        # train(config, log, iteration)
 
         # --------------------------------------------- STEP 3: Predict --------------------------------------------- #
         # Run nnUNetv2_predict command
-        predict(config, log, iteration)
+        # predict(config, log, iteration)
 
         # ---------------------------------------- STEP 4: Evaluate test set ---------------------------------------- #
         evaluation_metrics_test = evaluate_test_set(test_img_indices, config, log, iteration)

@@ -54,28 +54,29 @@ def get_evaluations_from_json(experiments_dir, experiment):
             data = json.load(jsonFile)
 
             # Get the evaluation metrics
-            evaluation_metrics = data["evaluations_mean"]
+            evaluations_mean = data["evaluations_mean"]
+            evaluations_std = data["evaluations_std"]
 
             # Append to lists
-            DICE.append(evaluation_metrics["DICE_mean"])
-            IoU.append(evaluation_metrics["IoU_mean"])
-            Hausdorff_distance.append(evaluation_metrics["Hausdorff_distance_mean"])
-            num_connected_components.append(evaluation_metrics["num_connected_components_mean"])
-            centerline_DICE.append(evaluation_metrics["combined_centerline_dice_score_mean"])
-            weighted_centerline_DICE.append(evaluation_metrics["weighted_centerline_dice_score_mean"])
-            entropy.append(evaluation_metrics["entropy_mean"])
+            DICE.append(evaluations_mean["DICE_mean"])
+            IoU.append(evaluations_mean["IoU_mean"])
+            Hausdorff_distance.append(evaluations_mean["Hausdorff_distance_mean"])
+            num_connected_components.append(evaluations_mean["num_connected_components_mean"])
+            centerline_DICE.append(evaluations_mean["combined_centerline_dice_score_mean"])
+            weighted_centerline_DICE.append(evaluations_mean["weighted_centerline_dice_score_mean"])
+            entropy.append(evaluations_mean["entropy_mean"])
 
-            DICE_std.append(evaluation_metrics["DICE_std"])
-            IoU_std.append(evaluation_metrics["IoU_std"])
-            Hausdorff_distance_std.append(evaluation_metrics["Hausdorff_distance_std"])
-            num_connected_components_std.append(evaluation_metrics["num_connected_components_std"])
-            centerline_DICE_std.append(evaluation_metrics["combined_centerline_dice_score_std"])
-            weighted_centerline_DICE_std.append(evaluation_metrics["weighted_centerline_dice_score_std"])
-            entropy_std.append(evaluation_metrics["entropy_std"])
+            DICE_std.append(evaluations_std["DICE_std"])
+            IoU_std.append(evaluations_std["IoU_std"])
+            Hausdorff_distance_std.append(evaluations_std["Hausdorff_distance_std"])
+            num_connected_components_std.append(evaluations_std["num_connected_components_std"])
+            centerline_DICE_std.append(evaluations_std["combined_centerline_dice_score_std"])
+            weighted_centerline_DICE_std.append(evaluations_std["weighted_centerline_dice_score_std"])
+            entropy_std.append(evaluations_std["entropy_std"])
 
         # There is only one iteration for the full dataset
-        if "full_dataset" in experiment:
-            break
+        # if "full_dataset" in experiment:
+            # break
 
     evaluations_experiment = {
                               "DICE": [DICE, DICE_std],
@@ -103,8 +104,8 @@ def plot_evaluation_metric(all_evaluations, evaluation_metric):
 
     full_dataset = all_evaluations["full_dataset"][evaluation_metric][0]
     full_dataset_std = all_evaluations["full_dataset"][evaluation_metric][1]
-    full_dataset = [full_dataset[0]] * 5          # Repeat the value for all iterations
-    full_dataset_std = [full_dataset_std[0]] * 5  # Repeat the value for all iterations
+    full_dataset = [full_dataset[4]] * 5          # Repeat the value of iteration 5 for all iterations
+    full_dataset_std = [full_dataset_std[4]] * 5  # Repeat the value of iteration 5 for all iterations
 
     # Samples in training set across iterations
     num_samples_dataset = 70 - 10  # Exluding the test set
@@ -114,7 +115,7 @@ def plot_evaluation_metric(all_evaluations, evaluation_metric):
     # Combine num_samples_training and percent_samples_training into a list of strings
     xticks_labels = [f"{num_samples_training[i]} \n ({percent_samples_training[i]:.1f}%)" for i in range(len(num_samples_training))]
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(8, 6))
 
     # Plot mean of evaluation metric
     plt.plot(worst, label="Worst", color='red') #, marker='o')
@@ -134,7 +135,8 @@ def plot_evaluation_metric(all_evaluations, evaluation_metric):
     # plt.title("Model performance throughout iterations")
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f"../Figures/results/evaluation_metric_{evaluation_metric}_v4.png")
+    # plt.show()
 
 if __name__ == "__main__":
 
@@ -142,10 +144,10 @@ if __name__ == "__main__":
     experiments_dir = r"C:/Users/annae/OneDrive - Danmarks Tekniske Universitet/Speciale/Specialkursus/experiments"
 
     all_experiments = [
-                       "experiment_worst_70samples_v1",
-                       "experiment_best_70samples_v1",
-                       "experiment_random_70samples_v1",
-                       "experiment_full_dataset_70samples_v2",
+                       "experiment_worst_70samples_v4",
+                       "experiment_best_70samples_v4",
+                       "experiment_random_70samples_v4",
+                       "experiment_full_dataset_70samples_v4",
                        ]
     
     all_selections = [
@@ -173,6 +175,7 @@ if __name__ == "__main__":
 
         # Get evaluations for the experiment   
         evaluations = get_evaluations_from_json(experiments_dir, experiment)
+        # print(f"Loaded evaluations for {experiment}")
 
         # Append to dictionary
         all_evaluations[selection] = evaluations

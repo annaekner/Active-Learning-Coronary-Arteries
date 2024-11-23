@@ -12,7 +12,7 @@ from predict_ import predict
 from evaluate_test_set_ import evaluate_test_set
 from evaluate_unlabeled_set_ import evaluate_unlabeled_set
 from select_samples_for_retraining_ import select_samples_for_retraining
-from prepare_next_iteration_ import prepare_next_iteration
+from prepare_next_iteration_full_dataset_ import prepare_next_iteration_full_dataset
 
 # Set up logging
 log = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ def main(config):
     prepare_initial_training_full_dataset(test_img_indices, config, log)
 
     # Number of iterations
-    num_iterations = 1
+    num_iterations = 5
 
     for iteration in range(num_iterations):
 
@@ -61,7 +61,7 @@ def main(config):
         # retraining = select_samples_for_retraining(evaluation_metrics_unlabeled, config, log, iteration)
 
         # -------------------------------------- STEP 6: Prepare next iteration ------------------------------------- #
-        # prepare_next_iteration(retraining, test_img_indices, config, log, iteration)
+        prepare_next_iteration_full_dataset(test_img_indices, config, log, iteration)
 
 if __name__ == "__main__":
     main()

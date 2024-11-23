@@ -82,21 +82,21 @@ def prepare_initial_training(test_img_indices, config, log):
     log.info(f"All samples except from initial training samples have been moved from imagesTr -> imagesTs, and labelsTr -> labelsTs")
 
     # STEP 2: Update numTraining in dataset.json (both in nnUNet_preprocessed and nnUNet_raw) 
-    dataset_json_nnUNetpreprocessed_path = f"{base_dir}/{version}/{data_preprocessed_dir}/{dataset_name}/dataset.json"
+    # dataset_json_nnUNetpreprocessed_path = f"{base_dir}/{version}/{data_preprocessed_dir}/{dataset_name}/dataset.json"
     dataset_json_nnUNetraw_path = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/dataset.json"
 
-    # nnUNet_preprocessed/dataset.json
-    with open(dataset_json_nnUNetpreprocessed_path, "r+") as jsonFile:
+    # # nnUNet_preprocessed/dataset.json
+    # with open(dataset_json_nnUNetpreprocessed_path, "r+") as jsonFile:
 
-        # Get the dataset.json content
-        data = json.load(jsonFile)
+    #     # Get the dataset.json content
+    #     data = json.load(jsonFile)
 
-        # Update the number of training samples
-        data["numTraining"] = num_samples_initial_training
+    #     # Update the number of training samples
+    #     data["numTraining"] = num_samples_initial_training
 
-        jsonFile.seek(0)
-        json.dump(data, jsonFile)
-        jsonFile.truncate()
+    #     jsonFile.seek(0)
+    #     json.dump(data, jsonFile)
+    #     jsonFile.truncate()
 
     # nnUNet_raw/dataset.json
     with open(dataset_json_nnUNetraw_path, "r+") as jsonFile:

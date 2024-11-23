@@ -50,6 +50,5 @@ def prepare_initial_training_full_dataset(test_img_indices, config, log):
     if num_channels == 2:
         os.rename(f"{images_input_dir}/{filename}_0001.nii.gz", f"{images_output_dir}/{filename}_0001.nii.gz")
     
-    log.info(f"Number of samples used for initial training: {num_samples_initial_training}")
     log.info(f"All samples of the test set have been moved from imagesTr -> imagesTs, and labelsTr -> labelsTs")
     log.info(f'----------------------------------------------------------------------------\n')

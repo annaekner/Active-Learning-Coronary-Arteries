@@ -7,7 +7,7 @@ import numpy as np
 
 import tools
 
-def prepare_next_iteration(retraining, test_img_indices, config, log, iteration):
+def prepare_next_iteration_full_dataset(test_img_indices, config, log, iteration):
 
     # Configuration settings
     base_dir = config.base_settings.base_dir
@@ -36,76 +36,7 @@ def prepare_next_iteration(retraining, test_img_indices, config, log, iteration)
 
     num_samples_test = config.test_settings.num_samples_test
 
-    # Image indices of retraining samples
-    img_indices_retraining = retraining["img_indices_retraining"]
-    num_samples_for_retraining = len(img_indices_retraining)
-
     log.info(f'-------------------------- Prepare next iteration --------------------------')
-
-    # -------------------------------- STEP 1: Update numTraining in dataset.json ------------------------------- #
-    # Paths to dataset.json files 
-    dataset_json_nnUNetpreprocessed_path = f"{base_dir}/{version}/{data_preprocessed_dir}/{dataset_name}/dataset.json"
-    dataset_json_nnUNetraw_path = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/dataset.json"
-
-    # nnUNet_preprocessed/dataset.json
-    with open(dataset_json_nnUNetpreprocessed_path, "r+") as jsonFile:
-
-        # Get the dataset.json content
-        data = json.load(jsonFile)
-
-        # Get the current number of training samples
-        num_current_training_samples = data["numTraining"]
-
-        # Add the number of retraining samples to the total amount
-        data["numTraining"] = num_current_training_samples + num_samples_for_retraining
-
-        jsonFile.seek(0)
-        json.dump(data, jsonFile)
-        jsonFile.truncate()
-
-    log.info(f'Number of training samples changed from {num_current_training_samples} to {num_current_training_samples + num_samples_for_retraining} (nnUNet_preprocessed/dataset.json)')
-
-    # nnUNet_raw/dataset.json
-    with open(dataset_json_nnUNetraw_path, "r+") as jsonFile:
-
-        # Get the dataset.json content
-        data = json.load(jsonFile)
-
-        # Get the current number of training samples
-        num_current_training_samples = data["numTraining"]
-
-        # Add the number of retraining samples to the total amount
-        data["numTraining"] = num_current_training_samples + num_samples_for_retraining
-
-        jsonFile.seek(0)
-        json.dump(data, jsonFile)
-        jsonFile.truncate()
-
-    log.info(f'Number of training samples changed from {num_current_training_samples} to {num_current_training_samples + num_samples_for_retraining} (nnUNet_preprocessed/dataset.json)')
-
-    # ------------ STEP 2: Move retraining samples from imagesTs -> imagesTr and labelsTs -> labelsTr ----------- #
-    # Input and output directory for images and labels
-    images_input_dir = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{test_images_dir}"
-    images_output_dir = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{train_images_dir}"
-    labels_input_dir = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{test_labels_dir}"
-    labels_output_dir = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{train_labels_dir}"
-
-    for img_index in img_indices_retraining:
-
-        # Filename
-        filename = f"img{img_index}"
-
-        # Move from imagesTs -> imagesTr
-        os.rename(f"{images_input_dir}/{filename}_0000.nii.gz", f"{images_output_dir}/{filename}_0000.nii.gz")
-
-        if num_channels == 2:
-            os.rename(f"{images_input_dir}/{filename}_0001.nii.gz", f"{images_output_dir}/{filename}_0001.nii.gz")
-
-        # Move from labelsTs -> labelsTr
-        os.rename(f"{labels_input_dir}/{filename}.nii.gz", f"{labels_output_dir}/{filename}.nii.gz")
-
-    log.info(f'Re-training samples moved from imagesTs -> imagesTr, and labelsTs -> labelsTr')
-
     # -------------------- STEP 3: Move files from nnUNet_predictions to /iterations/ folder -------------------- #
     # Path to the nnUNet_predictions folder
     nnUNet_predictions_folder = f"{base_dir}/{version}/{data_predicted_dir}/{dataset_name}"
