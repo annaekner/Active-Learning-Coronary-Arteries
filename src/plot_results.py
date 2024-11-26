@@ -33,15 +33,6 @@ def get_evaluations_from_json(experiments_dir, experiment):
     weighted_centerline_DICE_std = []
     entropy_std = []
 
-    # pseudo_std = 0.001
-    # DICE_std = [pseudo_std] * 5
-    # IoU_std = [pseudo_std] * 5
-    # Hausdorff_distance_std = [pseudo_std] * 5
-    # num_connected_components_std = [pseudo_std] * 5
-    # centerline_DICE_std = [pseudo_std] * 5
-    # weighted_centerline_DICE_std = [pseudo_std] * 5
-    # entropy_std = [pseudo_std] * 5
-
     for iteration in range(5):
 
         # Paths
@@ -90,7 +81,7 @@ def get_evaluations_from_json(experiments_dir, experiment):
     
     return evaluations_experiment
 
-def plot_evaluation_metric(all_evaluations, evaluation_metric):
+def plot_evaluation_metric(all_evaluations, evaluation_metric, ax):
 
     # Get the evaluation metric across iterations for each selection strategy
     worst = all_evaluations["worst"][evaluation_metric][0]
@@ -109,34 +100,44 @@ def plot_evaluation_metric(all_evaluations, evaluation_metric):
 
     # Samples in training set across iterations
     num_samples_dataset = 70 - 10  # Exluding the test set
-    num_samples_training = [3, 6, 9, 12, 15]
+    # num_samples_training = [3, 6, 9, 12, 15]
+    num_samples_training = [5, 10, 15, 20, 25]
     percent_samples_training = [num_samples_training[i] / num_samples_dataset * 100 for i in range(len(num_samples_training))]
 
     # Combine num_samples_training and percent_samples_training into a list of strings
     xticks_labels = [f"{num_samples_training[i]} \n ({percent_samples_training[i]:.1f}%)" for i in range(len(num_samples_training))]
 
-    plt.figure(figsize=(8, 6))
-
     # Plot mean of evaluation metric
-    plt.plot(worst, label="Worst", color='red') #, marker='o')
-    plt.plot(best, label="Best", color='green') #, marker='o')
-    plt.plot(random, label="Random", color='blue') #, marker='o')
-    plt.plot(full_dataset, label="Full dataset", linestyle = '--', color='grey')
+    ax.plot(worst, label="Worst", color='red') #, marker='o')
+    ax.plot(best, label="Best", color='green') #, marker='o')
+    ax.plot(random, label="Random", color='blue') #, marker='o')
+    ax.plot(full_dataset, label="Full dataset", linestyle = '--', color='grey')
 
     # Plot standard deviation of evaluation metric as shaded area
-    plt.fill_between(range(5), np.array(worst) - np.array(worst_std), np.array(worst) + np.array(worst_std), color='red', alpha=0.2)
-    plt.fill_between(range(5), np.array(best) - np.array(best_std), np.array(best) + np.array(best_std), color='green', alpha=0.2)
-    plt.fill_between(range(5), np.array(random) - np.array(random_std), np.array(random) + np.array(random_std), color='blue', alpha=0.2)
-    plt.fill_between(range(5), np.array(full_dataset) - np.array(full_dataset_std), np.array(full_dataset) + np.array(full_dataset_std), color='grey', alpha=0.2)
+    ax.fill_between(range(5), np.array(worst) - np.array(worst_std), np.array(worst) + np.array(worst_std), color='red', alpha=0.2)
+    ax.fill_between(range(5), np.array(best) - np.array(best_std), np.array(best) + np.array(best_std), color='green', alpha=0.2)
+    ax.fill_between(range(5), np.array(random) - np.array(random_std), np.array(random) + np.array(random_std), color='blue', alpha=0.2)
+    ax.fill_between(range(5), np.array(full_dataset) - np.array(full_dataset_std), np.array(full_dataset) + np.array(full_dataset_std), color='grey', alpha=0.2)
+    
+    ax.set_xticks([0, 1, 2, 3, 4])
+    ax.set_xticklabels(xticks_labels)
+    ax.set_xlabel("Number(%) of samples in training set")
+    ax.set_ylabel(f"{evaluation_metric} (mean)")
+    ax.legend()
+    ax.set_title(f"{evaluation_metric}")
 
-    plt.xticks([0, 1, 2, 3, 4], xticks_labels)
-    plt.xlabel("Number(%) of samples in training set")
-    plt.ylabel(f"{evaluation_metric} (mean)")
-    # plt.title("Model performance throughout iterations")
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(f"../Figures/results/evaluation_metric_{evaluation_metric}_v4.png")
-    # plt.show()
+def plot_all_evaluation_metrics(all_evaluations, evaluation_metrics):
+    fig, axs = plt.subplots(2, 3, figsize=(20, 10))
+    axs = axs.flatten()
+
+    for i, evaluation_metric in enumerate(evaluation_metrics):
+        plot_evaluation_metric(all_evaluations, evaluation_metric, axs[i])
+
+    plt.subplots_adjust(hspace=0.4, wspace=0.2)
+    # plt.tight_layout()
+    # plt.savefig("../Figures/results/all_evaluation_metrics_v6.png")
+    plt.show()
+
 
 if __name__ == "__main__":
 
@@ -144,43 +145,42 @@ if __name__ == "__main__":
     experiments_dir = r"C:/Users/annae/OneDrive - Danmarks Tekniske Universitet/Speciale/Specialkursus/experiments"
 
     all_experiments = [
-                       "experiment_worst_70samples_v4",
-                       "experiment_best_70samples_v4",
-                       "experiment_random_70samples_v4",
-                       "experiment_full_dataset_70samples_v4",
+                       "experiment_worst_70samples_v6",
+                       "experiment_best_70samples_v6",
+                       "experiment_random_70samples_v6",
+                       "experiment_uncertainty_70samples_v6",
+                       "experiment_full_dataset_70samples_v6",
                        ]
     
     all_selections = [
                       "worst",
                       "best",
                       "random",
+                      "uncertainty",
                       "full_dataset"
                       ]
     
     all_metrics = [
                     "DICE",
-                    "IoU",
-                    "Hausdorff distance",
-                    "Number of connected components",
                     "Centerline DICE",
+                    "Hausdorff distance",
+                    "IoU",
                     "Weighted centerline DICE",
-                    "Entropy"
+                    "Number of connected components",
+                    # "Entropy"
                 ]
 
     # Dictionary for all evaluations
-    # Keys are the selection strategy, either "worst", "best", "random" or "full_dataset"
+    # Keys are the selection strategy, either "worst", "best", "random", "uncertainty" or "full_dataset"
     all_evaluations = {}
                 
     for experiment, selection in zip(all_experiments, all_selections):
 
         # Get evaluations for the experiment   
         evaluations = get_evaluations_from_json(experiments_dir, experiment)
-        # print(f"Loaded evaluations for {experiment}")
 
         # Append to dictionary
         all_evaluations[selection] = evaluations
 
-    # Plot each evaluation metric
-    for metric in all_metrics:
-
-        plot_evaluation_metric(all_evaluations, metric)
+    # Plot all evaluation metrics
+    plot_all_evaluation_metrics(all_evaluations, all_metrics)
