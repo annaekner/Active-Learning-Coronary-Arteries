@@ -22,32 +22,32 @@ def train(config, log, iteration):
 
     # Run the nnUNetv2_train command
     # EXAMPLE: nnUNetv2_train 1 3d_fullres all -tr nnUNetTrainer_50epochs
-    if iteration == 0:
+    # if iteration == 0:
 
-        # Train without pre-trained weights
-        train_command = [
-            "nnUNetv2_train",
-            f"{dataset_id}",
-            f"{network_configuration}",
-            f"{fold}",
-            "-tr", f"{trainer}",
-        ]
+    # Train without pre-trained weights
+    train_command = [
+        "nnUNetv2_train",
+        f"{dataset_id}",
+        f"{network_configuration}",
+        f"{fold}",
+        "-tr", f"{trainer}",
+    ]
 
-        log.info(f"Training without pre-trained weights")
+    log.info(f"Training without pre-trained weights")
 
-    else:
-        # Train with pre-trained weights
-        train_command = [
-            "nnUNetv2_train",
-            f"{dataset_id}",
-            f"{network_configuration}",
-            f"{fold}",
-            "-tr", f"{trainer}",
-            "-pretrained_weights", f"{checkpoint_path}"  
-        ]
+    # else:
+    #     # Train with pre-trained weights
+    #     train_command = [
+    #         "nnUNetv2_train",
+    #         f"{dataset_id}",
+    #         f"{network_configuration}",
+    #         f"{fold}",
+    #         "-tr", f"{trainer}",
+    #         "-pretrained_weights", f"{checkpoint_path}"  
+    #     ]
 
-        log.info(f"Training with pre-trained weights")
-        log.info(f"Path to model checkpoint from previous iteration: '{checkpoint_path}'")
+    #     log.info(f"Training with pre-trained weights")
+    #     log.info(f"Path to model checkpoint from previous iteration: '{checkpoint_path}'")
 
     log.info(f"Train command: {train_command}")
 

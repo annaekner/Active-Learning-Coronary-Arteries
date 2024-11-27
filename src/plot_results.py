@@ -93,6 +93,9 @@ def plot_evaluation_metric(all_evaluations, evaluation_metric, ax):
     random = all_evaluations["random"][evaluation_metric][0]
     random_std = all_evaluations["random"][evaluation_metric][1]
 
+    uncertainty = all_evaluations["uncertainty"][evaluation_metric][0]
+    uncertainty_std = all_evaluations["uncertainty"][evaluation_metric][1]
+
     full_dataset = all_evaluations["full_dataset"][evaluation_metric][0]
     full_dataset_std = all_evaluations["full_dataset"][evaluation_metric][1]
     full_dataset = [full_dataset[4]] * 5          # Repeat the value of iteration 5 for all iterations
@@ -111,12 +114,14 @@ def plot_evaluation_metric(all_evaluations, evaluation_metric, ax):
     ax.plot(worst, label="Worst", color='red') #, marker='o')
     ax.plot(best, label="Best", color='green') #, marker='o')
     ax.plot(random, label="Random", color='blue') #, marker='o')
+    ax.plot(uncertainty, label="Uncertainty", color='purple')
     ax.plot(full_dataset, label="Full dataset", linestyle = '--', color='grey')
 
     # Plot standard deviation of evaluation metric as shaded area
     ax.fill_between(range(5), np.array(worst) - np.array(worst_std), np.array(worst) + np.array(worst_std), color='red', alpha=0.2)
     ax.fill_between(range(5), np.array(best) - np.array(best_std), np.array(best) + np.array(best_std), color='green', alpha=0.2)
     ax.fill_between(range(5), np.array(random) - np.array(random_std), np.array(random) + np.array(random_std), color='blue', alpha=0.2)
+    ax.fill_between(range(5), np.array(uncertainty) - np.array(uncertainty_std), np.array(uncertainty) + np.array(uncertainty_std), color='purple', alpha=0.2)
     ax.fill_between(range(5), np.array(full_dataset) - np.array(full_dataset_std), np.array(full_dataset) + np.array(full_dataset_std), color='grey', alpha=0.2)
     
     ax.set_xticks([0, 1, 2, 3, 4])
@@ -135,7 +140,8 @@ def plot_all_evaluation_metrics(all_evaluations, evaluation_metrics):
 
     plt.subplots_adjust(hspace=0.4, wspace=0.2)
     # plt.tight_layout()
-    # plt.savefig("../Figures/results/all_evaluation_metrics_v6.png")
+    # plt.savefig("../Figures/results/all_evaluation_metrics_v7.png")
+    # plt.savefig("/zhome/cd/e/145569/Documents/special-course/all_evaluation_metrics_v7.png")
     plt.show()
 
 
@@ -143,12 +149,13 @@ if __name__ == "__main__":
 
     # Directories
     experiments_dir = r"C:/Users/annae/OneDrive - Danmarks Tekniske Universitet/Speciale/Specialkursus/experiments"
+    # experiments_dir = r"/work3/s193396"
 
     all_experiments = [
-                       "experiment_worst_70samples_v6",
-                       "experiment_best_70samples_v6",
-                       "experiment_random_70samples_v6",
-                       "experiment_uncertainty_70samples_v6",
+                       "experiment_worst_70samples_v7",
+                       "experiment_best_70samples_v7",
+                       "experiment_random_70samples_v7",
+                       "experiment_uncertainty_70samples_v7",
                        "experiment_full_dataset_70samples_v6",
                        ]
     

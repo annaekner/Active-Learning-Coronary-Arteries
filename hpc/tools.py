@@ -227,16 +227,27 @@ def compute_entropy(img_index, config, log):
     npz_file = np.load(npz_path)
     probabilities = npz_file['probabilities'] # Shape (2, z, y, x)
 
-    # Scipy computation
-    # probabilities = probabilities.transpose(1, 2, 3, 0)  # Shape (z, y, x, 2)
-    # voxelwise_entropy = scipy.stats.entropy(probabilities, axis=-1)  # Compute entropy along the last axis (class axis) 
-
-    # Manual computation 
-    # voxelwise_entropy = -np.sum(probabilities * np.log(np.clip(probabilities, 1e-10, None)), axis = 0)
+    # Voxel-wise entropy
     voxelwise_entropy = -np.sum(probabilities * np.log(probabilities + 1e-20), axis=0) / np.log(2)
 
-    # Compute image-level entropy (mean of voxel-wise entropies)
-    entropy = np.mean(voxelwise_entropy)
+    # Flatten the 3D array into 1D
+    flattened_entropy = voxelwise_entropy.flatten()
+
+    # Determine the number of elements in the top 20%
+    top_20_percent_count = int(len(flattened_entropy) * 0.2)
+
+    # Sort the flattened array in descending order (from largest to smallest)
+    sorted_entropy = np.sort(flattened_entropy)[::-1]
+
+    # Take the top 20% largest values
+    top_20_percent_values = sorted_entropy[:top_20_percent_count]
+
+    # Compute the mean of the top 20% largest values
+    mean_top_20_percent = np.mean(top_20_percent_values)
+
+    # Image-level entropy
+    entropy = mean_top_20_percent
+    # entropy = np.mean(voxelwise_entropy)
 
     return float(entropy)
 
@@ -269,8 +280,8 @@ def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, 
                                                                                config)
     
     # Convert number of connected components (num_cc) to weight (w): 
-    # w = 1 - (num_cc * 0.1)
-    weight = 1 - (num_connected_components * 0.1)
+    # w = 1 - (num_cc - 1) * 0.1
+    weight = 1 - (num_connected_components - 1) * 0.1
 
     # Multiply the combined DICE score with the weight
     # Samples with only one connected component will have high weighted scores, 
