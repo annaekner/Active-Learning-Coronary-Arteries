@@ -114,15 +114,20 @@ def prepare_next_iteration(retraining, test_img_indices, config, log, iteration)
     # Path to /iterations/predictions/ folder where the predictions on the test set need to be moved to
     output_path = f"{base_dir}/{version}/{data_iterations_dir}/iteration_{iteration}/{iterations_predictions_dir}"
 
-    # Only select the three first test set samples
-    selected_test_img_indices = test_img_indices[:3]
+    # Select the two samples from the test set, and three samples from the retraining set
+    selected_test_img_indices = test_img_indices[:2]
+    selected_retraining_img_indices = img_indices_retraining[:3]
 
-    for img_index in selected_test_img_indices:
+    # Combine the selected test set and retraining samples
+    selected_img_indices = selected_test_img_indices + selected_retraining_img_indices
+
+    for img_index in selected_img_indices:
 
         # Move from nnUNet_results -> /iterations/predictions/
         os.rename(f"{nnUNet_predictions_folder}/img{img_index}.nii.gz", f"{output_path}/img{img_index}.nii.gz")
 
     log.info(f'Predictions of images {selected_test_img_indices} from the test set have been moved to "~/iteration_{iteration}/{iterations_predictions_dir}"')
+    log.info(f'Predictions of images {selected_retraining_img_indices} from the retraining set have been moved to "~/iteration_{iteration}/{iterations_predictions_dir}"')
 
     # ------------------------------ STEP 4: Empty the nnUNet_predictions subfolder ----------------------------- #
     # Remaining files in nnUNet_predictions folder
