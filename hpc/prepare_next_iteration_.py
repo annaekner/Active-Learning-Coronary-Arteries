@@ -33,6 +33,7 @@ def prepare_next_iteration(retraining, test_img_indices, config, log, iteration)
     network_configuration = config.train_settings.network_configuration
     trainer = config.train_settings.trainer
     fold = config.train_settings.fold
+    finetuning = config.train_settings.finetuning
 
     num_samples_test = config.test_settings.num_samples_test
 
@@ -142,7 +143,6 @@ def prepare_next_iteration(retraining, test_img_indices, config, log, iteration)
     # Filenames of the files to be moved
     subfolder_files = [os.path.basename(x) for x in glob.glob(f"{nnUNet_results_subfolder}/fold_{fold}/*")]
 
-    checkpoint_best_filename = next((filename for filename in subfolder_files if re.compile(r'.*_best\.pth$').match(filename)), None)
     checkpoint_final_filename = next((filename for filename in subfolder_files if re.compile(r'.*_final\.pth$').match(filename)), None)
     progress_png_filename = next((filename for filename in subfolder_files if re.compile(r'.*\.png$').match(filename)), None)
     training_log_filename = next((filename for filename in subfolder_files if re.compile(r'.*\.txt$').match(filename)), None)
@@ -151,13 +151,17 @@ def prepare_next_iteration(retraining, test_img_indices, config, log, iteration)
     # Path to /iterations/results/ folder where training info files need to be moved to
     output_path = f"{base_dir}/{version}/{data_iterations_dir}/iteration_{iteration}/{iterations_results_dir}"
 
-    os.rename(f"{nnUNet_results_subfolder}/fold_{fold}/{checkpoint_best_filename}", f"{output_path}/{checkpoint_best_filename}")
-    os.rename(f"{nnUNet_results_subfolder}/fold_{fold}/{checkpoint_final_filename}", f"{output_path}/{checkpoint_final_filename}")
     os.rename(f"{nnUNet_results_subfolder}/fold_{fold}/{progress_png_filename}", f"{output_path}/{progress_png_filename}")
     os.rename(f"{nnUNet_results_subfolder}/fold_{fold}/{training_log_filename}", f"{output_path}/{training_log_filename}")
     os.rename(f"{nnUNet_results_subfolder}/fold_{fold}/{debug_json_filename}", f"{output_path}/{debug_json_filename}")
 
-    log.info(f'Files "{checkpoint_best_filename}", "{checkpoint_final_filename}", "{progress_png_filename}", "{training_log_filename}" and "{debug_json_filename}" have been moved to "~/iteration_{iteration}/{iterations_results_dir}"')
+    log.info(f'Files "{checkpoint_final_filename}", "{progress_png_filename}", "{training_log_filename}" and "{debug_json_filename}" have been moved to "~/iteration_{iteration}/{iterations_results_dir}"')
+
+    if finetuning:
+
+        # If training is with finetuning, also move checkpoint_final.pth
+        os.rename(f"{nnUNet_results_subfolder}/fold_{fold}/{checkpoint_final_filename}", f"{output_path}/{checkpoint_final_filename}")
+        log.info(f'Checkpoint "{checkpoint_final_filename}" has been moved to "~/iteration_{iteration}/{iterations_results_dir}"')
 
     # ------------------------------- STEP 6: Remove the nnUNet_results subfolder ------------------------------- #
     try: 
