@@ -1,3 +1,4 @@
+import os
 import vtk
 import shutil
 import numpy as np
@@ -186,3 +187,37 @@ def copy_centerline_vtk_file(img_index, config):
     output_centerlines_path = f"{base_dir}/{output_centerlines_dir}/img{img_index}_lad_centerline.vtk"
 
     shutil.copy2(input_centerlines_path, output_centerlines_path)
+
+def get_all_images_with_centerline_data(config):
+    """ Save image indices of all images that have corresponding centerline data """
+
+    # Configuration settings
+    base_dir = config.base_settings.base_dir
+    data_processed_dir = config.data_loader.data_processed_dir
+
+    file_list_dir = config.data_loader.file_list_dir
+    file_list_train = config.data_loader.file_list_train
+
+    data_processed_folder = f"{base_dir}/{data_processed_dir}"
+    file_list_path = f"{base_dir}/{file_list_dir}/{file_list_train}"
+
+    # List for storing image indices
+    img_indices_centerline_data = []
+    img_indices_no_centerline_data = []
+
+    # Get all image indices that have corresponding centerline data
+    for img_index in range(1, 1001):
+        
+        # Check if centerline data exists
+        if os.path.isfile(f"{data_processed_folder}/{img_index}.img/{img_index}_lad_centerline_hu.vtk"):
+            img_indices_centerline_data.append(img_index)
+        else: 
+            img_indices_no_centerline_data.append(img_index)
+    
+    # Save image indices to .txt file
+    with open(file_list_path, "w") as file:
+        for img_index in img_indices_centerline_data:
+            file.write(f"{img_index}\n")
+
+    print(f"Centerline data found for {len(img_indices_centerline_data)} images (saved to {file_list_path})")
+    print(f"No centerline data found for {len(img_indices_no_centerline_data)} images, with image indices: {img_indices_no_centerline_data}")
