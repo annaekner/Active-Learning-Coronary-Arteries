@@ -4,12 +4,12 @@ import glob
 import numpy as np
 
 # Number of samples for the test set and initial training set
-num_samples_test = 10
+num_samples_test = 100
 num_samples_initial_training = 10
 seed = 0
 
 # Paths
-experiment_folder_path = "/work3/s193396/initial_2_onechannel_full_dataset"
+experiment_folder_path = "/work3/s193396/initial_947samples_full_dataset"
 train_labels_path = f"{experiment_folder_path}/nnUNet_raw/Dataset001_Heart/labelsTr"
 train_labels_filenames = [os.path.basename(x) for x in glob.glob(f"{train_labels_path}/*.nii.gz")]
 train_labels_indices = sorted([int(re.search(r'img(\d+)\.nii\.gz', path).group(1)) for path in train_labels_filenames])
@@ -33,10 +33,10 @@ with open(test_img_indices_path, "w") as file:
         # Write them as comma-separated values
         file.write(f"{index}\n")
 
-# # Load the .txt file
-# with open(test_img_indices_path, "r") as file:
-#     test_img_indices = [int(line.strip()) for line in file]
-# print(f"Number of test samples: {len(test_img_indices)}")
+# Load the .txt file
+with open(test_img_indices_path, "r") as file:
+    test_img_indices = [int(line.strip()) for line in file]
+print(f"Number of test samples: {len(test_img_indices)}")
 
 # -------------------------- Extract initial training set -------------------------- #
 # Remove the test set from the training set
@@ -60,10 +60,10 @@ with open(initial_training_img_indices_path, "w") as file:
         # Write them as comma-separated values
         file.write(f"{index}\n")
 
-# # Load the .txt file
-# with open(initial_training_img_indices_path, "r") as file:
-#     initial_training_img_indices = [int(line.strip()) for line in file]
-# print(f"Number of initial training samples: {len(initial_training_img_indices)}")
+# Load the .txt file
+with open(initial_training_img_indices_path, "r") as file:
+    initial_training_img_indices = [int(line.strip()) for line in file]
+print(f"Number of initial training samples: {len(initial_training_img_indices)}")
 
 # Check that there is no overlap between the test set and the initial training set
 assert len(set(test_img_indices).intersection(set(initial_training_img_indices))) == 0

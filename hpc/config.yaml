@@ -1,7 +1,7 @@
 base_settings:
   base_dir: /work3/s193396
   seed: 0
-  version: experiment_random_70samples_v5
+  version: initial_947samples_iteration_1_v1
   num_channels: 1
 centerline_predictions:
   tolerance: 1.4
@@ -36,13 +36,14 @@ home_settings:
   home_dir: /zhome/cd/e/145569
   special_course_dir: Documents/special-course
 retraining:
-  num_samples_per_retraining: 3
+  num_samples_per_retraining: 8
   selection_method: random
 train_settings:
   fold: all
   network_configuration: 3d_fullres
   num_processors: 4
-  trainer: nnUNetTrainer_50epochs
-  num_samples_initial_training: 3
+  trainer: nnUNetTrainer_250epochs
+  num_samples_initial_training: 10
+  finetuning: False
 test_settings:
-  num_samples_test: 10
+  num_samples_test: 100

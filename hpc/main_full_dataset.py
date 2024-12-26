@@ -26,9 +26,6 @@ def main(config):
     # Check that the data files look fine
     check_data_files(config, log)
 
-    # Run nnUNetv2_plan_and_preprocess command (on the full dataset)
-    plan_and_preprocess(config, log)
-
     # Load the test set image indices (consist across iterations and experiments)
     test_img_indices = load_test_set(config, log)
 
@@ -39,6 +36,9 @@ def main(config):
     num_iterations = 5
 
     for iteration in range(num_iterations):
+
+        # Run nnUNetv2_plan_and_preprocess command
+        plan_and_preprocess(config, log)
 
         # ------------------------------------ STEP 1: Prepare current iteration ------------------------------------ #
         prepare_current_iteration(config, log, iteration)

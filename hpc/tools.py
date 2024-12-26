@@ -345,10 +345,16 @@ def compute_evaluation_metrics_wrtGTsegmentation(ground_truth_segmentation, pred
     log.info(f'Hausdorff distance: {hausdorff_distance:.4f}')
     log.info(f'----------------------------------------------------------------------------\n')
 
+    try:
+        rounded_hausdorff_distance = round(hausdorff_distance)
+    except OverflowError:
+        log.error(f"OverflowError: cannot convert float infinity to integer for image index {img_index}")
+        rounded_hausdorff_distance = float('inf')
+
     evaluation_metrics = {
                           'DICE': round(DICE, 4), 
                           'IoU': round(IoU, 4),
-                          'Hausdorff_distance': round(hausdorff_distance),
+                          'Hausdorff_distance': rounded_hausdorff_distance,
                           }
     
     return evaluation_metrics

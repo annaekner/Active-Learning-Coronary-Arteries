@@ -111,5 +111,5 @@ def prepare_initial_training(test_img_indices, config, log):
         json.dump(data, jsonFile)
         jsonFile.truncate()
 
-    log.info(f"numTraining samples has been updated to: {num_samples_initial_training} (nnUNet_preprocessed/dataset.json and nnUNet_raw/dataset.json)")
+    log.info(f"numTraining samples has been updated to: {num_samples_initial_training} (nnUNet_raw/dataset.json)")
     log.info(f'----------------------------------------------------------------------------\n')

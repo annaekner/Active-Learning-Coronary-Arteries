@@ -38,6 +38,22 @@ def prepare_initial_training_full_dataset(test_img_indices, config, log):
     log.info(f"Total number of samples in the dataset: {num_samples_total} (including the test set)")
     log.info(f"Total number of samples in the dataset: {num_samples_total - len(test_img_indices)} (excluding the test set)")
 
+    # nnUNet_raw/dataset.json
+    dataset_json_nnUNetraw_path = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/dataset.json"
+    with open(dataset_json_nnUNetraw_path, "r+") as jsonFile:
+
+        # Get the dataset.json content
+        data = json.load(jsonFile)
+
+        # Update the number of training samples
+        data["numTraining"] = num_samples_total - len(test_img_indices)
+
+        jsonFile.seek(0)
+        json.dump(data, jsonFile)
+        jsonFile.truncate()
+
+    log.info(f"numTraining samples has been updated to: {num_samples_total - len(test_img_indices)} (nnUNet_raw/dataset.json)")
+    
     # Move all samples from the test set from imagesTr -> imagesTs, and labelsTr -> labelsTs
     for img_index in test_img_indices:
 
