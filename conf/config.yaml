@@ -1,42 +1,45 @@
 base_settings:
-  base_dir: "C:/Users/annae/OneDrive - Danmarks Tekniske Universitet/Speciale/Specialkursus"
+  base_dir: /work3/s193396
   seed: 0
-
-data_loader:
-  data_original_dir: "ImageCAS-images"
-  data_processed_dir: "ImageCASProcessing"
-  data_segmentation_dir: "ImageCAS-TotalSegmentator"
-  file_list_dir: "file_lists" 
-  file_list_train: "file_list_train.txt"
-  file_list_test: "file_list_test.txt"
-  voxel_spacing: 1
-
-data_processed:
-  dataset_dir: "nnUNet_raw/Dataset001_Heart"
-  train_images_dir: "imagesTr"
-  test_images_dir: "imagesTs"
-  train_labels_dir: "labelsTr"
-  test_labels_dir: "labelsTs"
-
-data_predicted:
-  dataset_dir: "nnUNet_predictions/Dataset001_Heart"
-  # date: "01_11_2024"
-  date: "28_10_2024"
-
-centerlines:
-  dir: "centerlines"
-
+  version: experiment_random_884samples_v1
+  num_channels: 1
 centerline_predictions:
-  dir: "centerline_predictions"
-  # date: "01_11_2024"
-  date: "28_10_2024"
   tolerance: 1.4
-
-segmentation:
-  dilation_radius: 5
-
 connected_components:
   min_size: 30
-
+data_centerlines:
+  dir: centerlines
+data_iterations:
+  dir: iterations
+  results_dir: results
+  predictions_dir: predictions
+  evaluations_dir: evaluations
+data_predicted:
+  dir: nnUNet_predictions
+data_preprocessed:
+  dir: nnUNet_preprocessed
+  dataset_json: dataset.json
+  dataset_plans: nnUNetPlans.json
+data_raw:
+  dir: nnUNet_raw
+  test_images_dir: imagesTs
+  test_labels_dir: labelsTs
+  train_images_dir: imagesTr
+  train_labels_dir: labelsTr
+data_results:
+  dir: nnUNet_results
+dataset_settings:
+  dataset_id: 1
+  dataset_name: Dataset001_Heart
 retraining:
-  num_samples_per_retraining: 3
+  num_samples_per_retraining: 10
+  selection_method: random
+train_settings:
+  fold: all
+  network_configuration: 3d_fullres
+  num_processors: 4
+  trainer: nnUNetTrainer_250epochs
+  num_samples_initial_training: 5
+  finetuning: False
+test_settings:
+  num_samples_test: 100

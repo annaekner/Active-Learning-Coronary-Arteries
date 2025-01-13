@@ -66,8 +66,8 @@ def get_evaluations_from_json(experiments_dir, experiment):
             entropy_std.append(evaluations_std["entropy_std"])
 
         # There is only one iteration for the full dataset
-        # if "full_dataset" in experiment:
-            # break
+        if "full_dataset" in experiment:
+            break
 
     evaluations_experiment = {
                               "DICE": [DICE, DICE_std],
@@ -81,7 +81,7 @@ def get_evaluations_from_json(experiments_dir, experiment):
     
     return evaluations_experiment
 
-def plot_evaluation_metric(all_evaluations, evaluation_metric, ax):
+def plot_evaluation_metric(all_evaluations, evaluation_metric, ax, title = None, y_label = None):
 
     # Get the evaluation metric across iterations for each selection strategy
     worst = all_evaluations["worst"][evaluation_metric][0]
@@ -98,38 +98,47 @@ def plot_evaluation_metric(all_evaluations, evaluation_metric, ax):
 
     full_dataset = all_evaluations["full_dataset"][evaluation_metric][0]
     full_dataset_std = all_evaluations["full_dataset"][evaluation_metric][1]
-    full_dataset = [full_dataset[4]] * 5          # Repeat the value of iteration 5 for all iterations
-    full_dataset_std = [full_dataset_std[4]] * 5  # Repeat the value of iteration 5 for all iterations
+    full_dataset = [full_dataset[0]] * 5          # Repeat the value of iteration 5 for all iterations
+    full_dataset_std = [full_dataset_std[0]] * 5  # Repeat the value of iteration 5 for all iterations
 
     # Samples in training set across iterations
-    num_samples_dataset = 70 - 10  # Exluding the test set
-    # num_samples_training = [3, 6, 9, 12, 15]
-    num_samples_training = [5, 10, 15, 20, 25]
+    num_samples_dataset = 884 - 100  # Exluding the test set
+    num_samples_training = [5, 15, 25, 35, 45]
     percent_samples_training = [num_samples_training[i] / num_samples_dataset * 100 for i in range(len(num_samples_training))]
 
     # Combine num_samples_training and percent_samples_training into a list of strings
     xticks_labels = [f"{num_samples_training[i]} \n ({percent_samples_training[i]:.1f}%)" for i in range(len(num_samples_training))]
 
     # Plot mean of evaluation metric
-    ax.plot(worst, label="Worst", color='red') #, marker='o')
-    ax.plot(best, label="Best", color='green') #, marker='o')
+    ax.plot(worst, label="LWOV", color='red') #, marker='o')
+    ax.plot(best, label="HWOV", color='green') #, marker='o')
     ax.plot(random, label="Random", color='blue') #, marker='o')
-    ax.plot(uncertainty, label="Uncertainty", color='purple')
+    ax.plot(uncertainty, label="Entropy", color='purple')
     ax.plot(full_dataset, label="Full dataset", linestyle = '--', color='grey')
 
     # Plot standard deviation of evaluation metric as shaded area
-    ax.fill_between(range(5), np.array(worst) - np.array(worst_std), np.array(worst) + np.array(worst_std), color='red', alpha=0.2)
-    ax.fill_between(range(5), np.array(best) - np.array(best_std), np.array(best) + np.array(best_std), color='green', alpha=0.2)
-    ax.fill_between(range(5), np.array(random) - np.array(random_std), np.array(random) + np.array(random_std), color='blue', alpha=0.2)
-    ax.fill_between(range(5), np.array(uncertainty) - np.array(uncertainty_std), np.array(uncertainty) + np.array(uncertainty_std), color='purple', alpha=0.2)
-    ax.fill_between(range(5), np.array(full_dataset) - np.array(full_dataset_std), np.array(full_dataset) + np.array(full_dataset_std), color='grey', alpha=0.2)
+    if not evaluation_metric in ["Hausdorff distance", "Number of connected components"]:
+        ax.fill_between(range(5), np.array(worst) - np.array(worst_std), np.array(worst) + np.array(worst_std), color='red', alpha=0.1)
+        ax.fill_between(range(5), np.array(best) - np.array(best_std), np.array(best) + np.array(best_std), color='green', alpha=0.1)
+        ax.fill_between(range(5), np.array(random) - np.array(random_std), np.array(random) + np.array(random_std), color='blue', alpha=0.1)
+        ax.fill_between(range(5), np.array(uncertainty) - np.array(uncertainty_std), np.array(uncertainty) + np.array(uncertainty_std), color='purple', alpha=0.1)
+        ax.fill_between(range(5), np.array(full_dataset) - np.array(full_dataset_std), np.array(full_dataset) + np.array(full_dataset_std), color='grey', alpha=0.1)
     
     ax.set_xticks([0, 1, 2, 3, 4])
     ax.set_xticklabels(xticks_labels)
-    ax.set_xlabel("Number(%) of samples in training set")
-    ax.set_ylabel(f"{evaluation_metric} (mean)")
+    ax.set_xlabel("Number(%) of annotated samples")
+    
+    if y_label:
+        ax.set_ylabel(f"{y_label} (mean)")
+    else:
+        ax.set_ylabel(f"{evaluation_metric} (mean)")
+
     ax.legend()
-    ax.set_title(f"{evaluation_metric}")
+
+    if title:
+        ax.set_title(f"{title}")
+    else:
+        ax.set_title(f"{evaluation_metric}")
 
 def plot_all_evaluation_metrics(all_evaluations, evaluation_metrics):
     fig, axs = plt.subplots(2, 3, figsize=(20, 10))
@@ -140,23 +149,29 @@ def plot_all_evaluation_metrics(all_evaluations, evaluation_metrics):
 
     plt.subplots_adjust(hspace=0.4, wspace=0.2)
     # plt.tight_layout()
-    # plt.savefig("../Figures/results/all_evaluation_metrics_v7.png")
-    # plt.savefig("/zhome/cd/e/145569/Documents/special-course/all_evaluation_metrics_v7.png")
-    plt.show()
+    # plt.savefig("../Figures/results/all_evaluation_metrics_v6.png")
+    plt.savefig("/zhome/cd/e/145569/Documents/special-course/all_evaluation_metrics_884samples_v1_new.png")
+    # plt.show()
 
+def plot_single_evaluation_metric(all_evaluations, evaluation_metric, title, y_label):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    plot_evaluation_metric(all_evaluations, evaluation_metric, ax, title, y_label)
+    plt.tight_layout() 
+    plt.savefig(f"/zhome/cd/e/145569/Documents/special-course/{y_label}_884samples_v1.png")
+    plt.show()
 
 if __name__ == "__main__":
 
     # Directories
-    experiments_dir = r"C:/Users/annae/OneDrive - Danmarks Tekniske Universitet/Speciale/Specialkursus/experiments"
-    # experiments_dir = r"/work3/s193396"
+    # experiments_dir = r"C:/Users/annae/OneDrive - Danmarks Tekniske Universitet/Speciale/Specialkursus/experiments"
+    experiments_dir = r"/work3/s193396"
 
     all_experiments = [
-                       "experiment_worst_70samples_v7",
-                       "experiment_best_70samples_v7",
-                       "experiment_random_70samples_v7",
-                       "experiment_uncertainty_70samples_v7",
-                       "experiment_full_dataset_70samples_v6",
+                       "experiment_worst_884samples_v1",
+                       "experiment_best_884samples_v1",
+                       "experiment_random_884samples_v1",
+                       "experiment_uncertainty_884samples_v1",
+                       "experiment_full_dataset_884samples_v1",
                        ]
     
     all_selections = [
@@ -174,7 +189,6 @@ if __name__ == "__main__":
                     "IoU",
                     "Weighted centerline DICE",
                     "Number of connected components",
-                    # "Entropy"
                 ]
 
     # Dictionary for all evaluations
@@ -190,4 +204,7 @@ if __name__ == "__main__":
         all_evaluations[selection] = evaluations
 
     # Plot all evaluation metrics
-    plot_all_evaluation_metrics(all_evaluations, all_metrics)
+    # plot_all_evaluation_metrics(all_evaluations, all_metrics)
+
+    # Plot a single evaluation metric
+    plot_single_evaluation_metric(all_evaluations, "Weighted centerline DICE", title = "Weighted overlap", y_label = "WOV")

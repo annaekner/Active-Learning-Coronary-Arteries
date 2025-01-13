@@ -1,68 +1,127 @@
+import re
+import vtk
+import glob
+import scipy
+import skimage
 import numpy as np
 import SimpleITK as sitk
-import scipy.ndimage
-import scipy.spatial
-import skimage.morphology
-import skimage.metrics
 
-def spatial_resample_scan(image, desired_spacing):
-    """
-    Resample scan to isotropic voxel spacing
-    """
-    current_n_vox = image.GetWidth()
-    current_spacing = image.GetSpacing()
-    new_n_vox_in_slice: int = int(current_n_vox * current_spacing[0] / desired_spacing)
-
-    # voxel size in the direction of the patient
-    depth_spacing = current_spacing[2]
-    n_vox_depth = image.GetDepth()
-    new_n_vox_depth = int(n_vox_depth * depth_spacing / desired_spacing)
-
-    new_volume_size = [new_n_vox_in_slice, new_n_vox_in_slice, new_n_vox_depth]
-
-    # Create new image with desired properties
-    new_image = sitk.Image(new_volume_size, image.GetPixelIDValue())
-    new_image.SetOrigin(image.GetOrigin())
-    new_image.SetSpacing([desired_spacing, desired_spacing, desired_spacing])
-    new_image.SetDirection(image.GetDirection())
-
-    # Make translation with no offset, since sitk.Resample needs this arg.
-    translation = sitk.TranslationTransform(3)
-    translation.SetOffset((0, 0, 0))
-
-    interpolator = sitk.sitkLinear
-
-    # Create final resampled image
-    resampled_image = sitk.Resample(image, new_image, translation, interpolator)
-
-    return resampled_image
-
-def compute_centerline_distance_map(sample):
+def list_of_all_predictions(config, log, iteration):
     """ 
-    Compute the Euclidean distance transform of the centerline (i.e. the distance of each voxel to 
-    the centerline), and save it as a .nii.gz file with the same dimensions as the original image.
+    Create a list with image indices of all predictions found
     """
-    # Load data from sample dictionary
-    image = sample['image']
-    centerline_indices = sample['centerline_indices']
 
-    # Initialize an empty binary mask of the same size as the image
-    distance_map = np.zeros_like(image, dtype=np.bool)
+    # Configuration settings
+    base_dir = config.base_settings.base_dir
+    version = config.base_settings.version
+    dataset_name = config.dataset_settings.dataset_name
+    data_predicted_dir = config.data_predicted.dir
 
-    # Set the centerline voxels to 1 in the binary mask
-    for idx in centerline_indices:
-        distance_map[tuple(idx)] = 1
-    
-    # Compute the distance transform
-    distance_map = scipy.ndimage.distance_transform_edt(~distance_map)
+    # Find predictions in folder
+    predictions_folder_path = f"{base_dir}/{version}/{data_predicted_dir}/{dataset_name}/"
+    all_predictions_filepaths = glob.glob(f'{predictions_folder_path}/*.nii.gz')
 
-    # Convert to float for better precision
-    distance_map = distance_map.astype(np.float32)
+    # Get image indices of predictions
+    predictions_img_indices = sorted([int(re.search(r'img(\d+)\.nii\.gz', path).group(1)) for path in all_predictions_filepaths])
 
-    # Convert from (x, y, z) back to (z, y, x)
-    # distance_map = distance_map.transpose(2, 1, 0)
+    return predictions_img_indices
 
-    return distance_map
+def load_prediction_segmentation(img_index, config, log, iteration):
+    """ 
+    Load the prediction (LAD segmentation) as both a numpy array and a nii.gz
+    """
+
+    # Configuration settings
+    base_dir = config.base_settings.base_dir
+    version = config.base_settings.version
+    dataset_name = config.dataset_settings.dataset_name
+    data_predicted_dir = config.data_predicted.dir      # Predicted LAD segmentations
+
+    # Load the prediction
+    prediction_path = f"{base_dir}/{version}/{data_predicted_dir}/{dataset_name}/img{img_index}.nii.gz"
+
+    # Convert from .nii.gz file to numpy array
+    prediction_nii = sitk.ReadImage(prediction_path)
+    prediction = sitk.GetArrayFromImage(prediction_nii)
+    prediction = prediction.astype(np.bool)
+
+    return prediction, prediction_nii
+
+def load_ground_truth_segmentation(img_index, config, log, iteration):
+    """ 
+    Load the ground truth (LAD segmentation) as both a numpy array and a nii.gz
+    """
+
+    # Configuration settings
+    base_dir = config.base_settings.base_dir
+    version = config.base_settings.version
+    dataset_name = config.dataset_settings.dataset_name
+
+    data_raw_dir = config.data_raw.dir                  
+    test_labels_dir = config.data_raw.test_labels_dir
+
+    # Load the ground truth 
+    ground_truth_path = f"{base_dir}/{version}/{data_raw_dir}/{dataset_name}/{test_labels_dir}/img{img_index}.nii.gz"
+
+    # Convert from .nii.gz file to numpy array
+    ground_truth_nii = sitk.ReadImage(ground_truth_path)
+    ground_truth = sitk.GetArrayFromImage(ground_truth_nii)
+    ground_truth = ground_truth.astype(np.bool)
+
+    return ground_truth, ground_truth_nii
+
+def load_ground_truth_centerline(img_index, prediction_segmentation_nii, config, log):
+    """
+    Load the ground truth centerline (of the LAD)
+    """
+
+    # Configuration settings
+    base_dir = config.base_settings.base_dir
+    version = config.base_settings.version
+    dataset_name = config.dataset_settings.dataset_name
+    data_centerlines_dir = config.data_centerlines.dir  # Ground truth LAD centerlines
+
+    # Load ground truth centerline (of left anterior descending artery)
+    centerline_path = f"{base_dir}/{version}/{data_centerlines_dir}/{dataset_name}/img{img_index}_lad_centerline.vtk"
+    centerline_reader = vtk.vtkPolyDataReader()
+    centerline_reader.SetFileName(centerline_path)
+    centerline_reader.Update()
+    centerline = centerline_reader.GetOutput()
+
+    # Extract points (physical coordinates) from the centerline
+    points = centerline.GetPoints()
+    num_points = points.GetNumberOfPoints()
+    centerline_points = np.array([points.GetPoint(i) for i in range(num_points)])
+
+    # Transform centerline points from physical coordinates to index coordinates
+    centerline_indices = np.array([prediction_segmentation_nii.TransformPhysicalPointToIndex(point) for point in centerline_points])
+    centerline_indices = centerline_indices[:, ::-1] # Convert from (x, y, z) to (z, y, x), i.e. [[z1, y1, x1], [z2, y2, x2], ...]
+
+    return centerline_indices
+
+def compute_centerline_from_prediction(prediction, prediction_nii, img_index, config):
+    """
+    Compute the centerline from the predicted LAD segmentation using skeletonization.
+    """
+    # Compute the skeleton of the prediction
+    prediction_centerline = skimage.morphology.skeletonize(prediction).astype(int)
+
+    # Get the indices of the centerline
+    prediction_centerline_indices = np.argwhere(prediction_centerline)
+
+    return prediction_centerline_indices
+
+def compute_tp_fp_fn_tn(ground_truth, prediction):
+    """ 
+    Compute the number of true positives (TP), false positives (FP), 
+    false negatives (FN), and true negatives (TN) between the ground truth and the prediction of the LAD.
+    """
+    tp = np.sum(ground_truth & prediction)   # True positive (overlap between ground truth and prediction)
+    fp = np.sum(~ground_truth & prediction)  # False positive (prediction where there is no LAD)
+    fn = np.sum(ground_truth & ~prediction)  # False negative (no prediction where there is LAD)
+    tn = np.sum(~ground_truth & ~prediction) # True negative (no prediction where there is no LAD)
+
+    return tp, fp, fn, tn
 
 def compute_connected_components(segmentation, config):
     """
@@ -105,31 +164,7 @@ def compute_connected_components(segmentation, config):
 
     return num_connected_components, labeled_array, largest_cc_array
 
-def compute_tp_fp_fn_tn(ground_truth, prediction):
-    """ 
-    Compute the number of true positives (TP), false positives (FP), 
-    false negatives (FN), and true negatives (TN) between the ground truth and the prediction of the LAD.
-    """
-    tp = np.sum(ground_truth & prediction)   # True positive (overlap between ground truth and prediction)
-    fp = np.sum(~ground_truth & prediction)  # False positive (prediction where there is no LAD)
-    fn = np.sum(ground_truth & ~prediction)  # False negative (no prediction where there is LAD)
-    tn = np.sum(~ground_truth & ~prediction) # True negative (no prediction where there is no LAD)
-
-    return tp, fp, fn, tn
-
-def compute_centerline_from_prediction(prediction, config):
-    """
-    Compute the centerline from the predicted LAD segmentation using skeletonization.
-    """
-    # Compute the skeleton of the prediction
-    prediction_centerline = skimage.morphology.skeletonize(prediction).astype(int)
-
-    # Get the indices of the centerline
-    prediction_centerline_indices = np.argwhere(prediction_centerline)
-
-    return prediction_centerline_indices
-
-def compute_centerline_coverage_and_dice(path_1, path_2, config):
+def compute_centerline_coverage_and_dice(path_1, path_2, img_index, log, config):
     """
     Compute the coverage of path 1 and path 2 and the combined path dice score.
     Paths are given as numpy arrays of the form [[z1, y1, x1], [z2, y2, x2], ...].
@@ -142,7 +177,7 @@ def compute_centerline_coverage_and_dice(path_1, path_2, config):
 
     n_points_1 = len(path_1)
     if n_points_1 < 1:
-        print("No points in path_1")
+        log.warning(f"No points in path_1 for image index {img_index}")
         return 0, 0, 0
 
     # Compute coverage for path_1
@@ -159,7 +194,7 @@ def compute_centerline_coverage_and_dice(path_1, path_2, config):
 
     n_points_2 = len(path_2)
     if n_points_2 < 1:
-        print("No points in path_2")
+        log.warning(f"No points in path_2 for image index {img_index}")
         return 0, 0, 0
 
     # Compute coverage for path_2
@@ -173,51 +208,58 @@ def compute_centerline_coverage_and_dice(path_1, path_2, config):
     path_dice = float(n_covered_1 + n_covered_2) / float(n_points_1 + n_points_2)
     return p_covered_1, p_covered_2, path_dice
 
+def compute_entropy(img_index, config, log):
+    """
+    Compute uncertainty (entropy) of a given sample from the prediction probabilities.
 
-def compute_evaluation_metrics_wrtGTsegmentation(ground_truth_segmentation, prediction, prediction_nii, img_index, log, config):
-    """ 
-    Compute metrics that compare the ground truth LAD segmentation and the predicted LAD segmentation.
-    This can only be done when the ground truth LAD segmentation is available, which is not always the case.
-
-    Args
-        ground_truth_segmentation: Ground truth LAD segmentation (binary mask, numpy array)
-        prediction: Predicted LAD segmentation (binary mask, numpy array)
-        prediction_nii: Predicted LAD segmentation (SimpleITK image, .nii.gz)
+    Low entropy means low uncertainty (the prediction is confident)
+    High entropy, i.e. close to 0.5 for binary segmentation, means high uncertainty (the prediction is not confident)
     """
 
-    # Compute true positives, false positives, false negatives, and true negatives
-    tp, fp, fn, tn = compute_tp_fp_fn_tn(ground_truth_segmentation, prediction)
+    # Configuration settings
+    base_dir = config.base_settings.base_dir
+    version = config.base_settings.version
+    dataset_name = config.dataset_settings.dataset_name
+    data_predicted_dir = config.data_predicted.dir
 
-    # DICE and IoU scores
-    DICE = 2 * tp / (2 * tp + fp + fn)
-    IoU = tp / (tp + fp + fn)
+    # Load the probabilities
+    npz_path = f"{base_dir}/{version}/{data_predicted_dir}/{dataset_name}/img{img_index}.npz"
+    npz_file = np.load(npz_path)
+    probabilities = npz_file['probabilities'] # Shape (2, z, y, x)
 
-    # Hausdorff distance
-    hausdorff_distance = skimage.metrics.hausdorff_distance(ground_truth_segmentation, prediction)
+    # Voxel-wise entropy
+    voxelwise_entropy = -np.sum(probabilities * np.log(probabilities + 1e-20), axis=0) / np.log(2)
 
-    # Print evaluation metrics
-    log.info(f'-------------- Evaluation metrics (w.r.t GT LAD segmentation) --------------')
-    log.info(f'Image index: {img_index}')
-    log.info(f'DICE: {DICE:.4f}')
-    log.info(f'IoU: {IoU:.4f}')
-    log.info(f'----------------------------------------------------------------------------\n')
+    # Flatten the 3D array into 1D
+    flattened_entropy = voxelwise_entropy.flatten()
 
-    evaluation_metrics = {
-                          'DICE': DICE, 
-                          'IoU': IoU,
-                          }
-    
-    return evaluation_metrics
+    # Determine the number of elements in the top 20%
+    top_20_percent_count = int(len(flattened_entropy) * 0.2)
+
+    # Sort the flattened array in descending order (from largest to smallest)
+    sorted_entropy = np.sort(flattened_entropy)[::-1]
+
+    # Take the top 20% largest values
+    top_20_percent_values = sorted_entropy[:top_20_percent_count]
+
+    # Compute the mean of the top 20% largest values
+    mean_top_20_percent = np.mean(top_20_percent_values)
+
+    # Image-level entropy
+    entropy = mean_top_20_percent
+    # entropy = np.mean(voxelwise_entropy)
+
+    return float(entropy)
 
 def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, prediction_centerline_indices, prediction_segmentation, img_index, log, config):
     """ 
     Compute metrics that compare the ground truth LAD centerline and the predicted LAD segmentation.
-    This can always be done, since the LAD centerline is always available.
+    Since the LAD centerline is always available, this can be done for any data sample.
 
     Args
         ground_truth_centerline_indices: Ground truth LAD centerline (numpy array of [z, y, x] index coordinates)
-        prediction: Predicted LAD segmentation (binary mask, numpy array)
-        prediction_nii: Predicted LAD segmentation (SimpleITK image, .nii.gz)
+        prediction_centerline_indices: Predicted LAD centerline (numpy array of [z, y, x] index coordinates)
+        prediction_segmentation: Predicted LAD segmentation (binary mask, numpy array)
     """
 
     # Connected components of prediction
@@ -235,13 +277,26 @@ def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, 
     # p_covered_2: How well the ground truth centerline covers the predicted centerline
     p_covered_1, p_covered_2, path_dice = compute_centerline_coverage_and_dice(ground_truth_centerline_indices, 
                                                                                prediction_centerline_indices, 
+                                                                               img_index,
+                                                                               log,
                                                                                config)
+    
+    # Convert number of connected components (num_cc) to weight (w): 
+    # w = 1 - (num_cc - 1) * 0.1
+    weight = 1 - (num_connected_components - 1) * 0.1
+
+    # Multiply the combined DICE score with the weight
+    # Samples with only one connected component will have high weighted scores, 
+    # samples with multiple connected components will have low weighted scores, 
+    weighted_score = weight * path_dice
+
+    # Compute uncertainty (entropy)
+    entropy = compute_entropy(img_index, config, log)
     
     # Log evaluation metrics
     log.info(f'--------------- Evaluation metrics (w.r.t GT LAD centerline) ---------------')
     log.info(f'Image index: {img_index}')
-    log.warning(f'Number of connected components: {num_connected_components} (image {img_index})') if num_connected_components > 1 \
-        else log.info(f'Number of connected components: {num_connected_components}')
+    log.info(f'Number of connected components: {num_connected_components}')
     log.info(f'Minimum size for connected components: {min_size} voxels')
     log.info(f'Number of points in predicted centerline: {len(prediction_centerline_indices)}')
     log.info(f'Number of points in ground truth centerline: {len(ground_truth_centerline_indices)}')
@@ -249,120 +304,119 @@ def compute_evaluation_metrics_wrtGTcenterline(ground_truth_centerline_indices, 
     log.info(f'Predicted centerline coverage of the ground truth centerline: {p_covered_1:.4f}')
     log.info(f'Ground truth centerline coverage of the predicted centerline: {p_covered_2:.4f}')
     log.info(f'Combined centerline "DICE" score: {path_dice:.4f}')
+    log.info(f'Weighted centerline "DICE" score: {weighted_score:.4f}')
+    log.info(f'Entropy (uncertainty): {entropy:.8f}')
     log.info(f'----------------------------------------------------------------------------\n')
 
     evaluation_metrics = {
                           'num_connected_components': num_connected_components,
-                          'predicted_centerline_coverage_of_ground_truth_centerline': p_covered_1,
-                          'ground_truth_centerline_coverage_of_predicted_centerline': p_covered_2,
-                          'combined_centerline_dice_score': path_dice,
+                          'predicted_centerline_coverage_of_ground_truth_centerline': round(p_covered_1, 4),
+                          'ground_truth_centerline_coverage_of_predicted_centerline': round(p_covered_2, 4),
+                          'combined_centerline_dice_score': round(path_dice, 4),
+                          'weighted_centerline_dice_score': round(weighted_score, 4),
+                          'entropy': round(entropy, 8),
                           }
     
     return evaluation_metrics
 
-def select_samples_for_retraining(evaluation_metrics_all, selection_method, log, config):
-    """
-    Select n samples for retraining based on the evaluation metrics of all predictions.
+def compute_evaluation_metrics_wrtGTsegmentation(ground_truth_segmentation, prediction_segmentation, img_index, log, config):
+    """ 
+    Compute metrics that compare the ground truth LAD segmentation and the predicted LAD segmentation.
+    This can only be done when the ground truth LAD segmentation is available, i.e. for the test set.
 
     Args
-        evaluation_metrics_all: Nested dictionary of evaluation metrics for all predictions.
-        selection_method: Method for selecting the sample for retraining ('worst', 'best', 'random').
+        ground_truth_segmentation: Ground truth LAD segmentation (binary mask, numpy array)
+        prediction_segmentation: Predicted LAD segmentation (binary mask, numpy array)
     """
 
-    # Configuration settings
-    num_samples_per_retraining = config.retraining.num_samples_per_retraining
+    # Compute true positives, false positives, false negatives, and true negatives
+    tp, fp, fn, tn = compute_tp_fp_fn_tn(ground_truth_segmentation, prediction_segmentation)
 
-    # List of samples considered for retraining
-    samples_considered_for_retraining = []
+    # DICE and IoU scores
+    DICE = 2 * tp / (2 * tp + fp + fn)
+    IoU = tp / (tp + fp + fn)
 
-    # All samples sorted by number of connected components (in ascending and descending order)
-    num_samples = len(evaluation_metrics_all)
-    all_samples = list(evaluation_metrics_all.keys())
-    all_samples_DICE_ascending = sorted(all_samples, key=lambda x: evaluation_metrics_all[x]['combined_centerline_dice_score'], reverse=False)
-    all_samples_DICE_descending = sorted(all_samples, key=lambda x: evaluation_metrics_all[x]['combined_centerline_dice_score'], reverse=True)
+    # Hausdorff distance
+    hausdorff_distance = skimage.metrics.hausdorff_distance(ground_truth_segmentation, prediction_segmentation)
 
-    if selection_method == 'worst':
-        # Find all predictions with > 1 connected component (if any)
-        for img_index in evaluation_metrics_all:
-            if evaluation_metrics_all[img_index]['num_connected_components'] > 1:
-                samples_considered_for_retraining.append(img_index)
-
-        # If not enough samples have > 1 connected components, add more
-        if len(samples_considered_for_retraining) < num_samples_per_retraining:
-            extra_samples = num_samples_per_retraining - len(samples_considered_for_retraining)
-            
-            for img_index in all_samples_DICE_ascending:
-
-                # Add sample to list of samples considered for retraining if it has not already been added
-                if img_index not in samples_considered_for_retraining:
-                    samples_considered_for_retraining.append(img_index)
-                    extra_samples -= 1
-
-                if extra_samples == 0:
-                    break
-
-        if len(samples_considered_for_retraining) == num_samples_per_retraining:
-            samples_for_retraining = samples_considered_for_retraining
-        
-        else:
-            # Select sample with the lowest combined centerline "DICE" score
-            samples_for_retraining = sorted(samples_considered_for_retraining, 
-                                        key=lambda x: evaluation_metrics_all[x]['combined_centerline_dice_score'],
-                                        reverse=False)[:num_samples_per_retraining]
-
-    elif selection_method == 'best':
-        # Find all predictions with exactly 1 connected component (if any)
-        for img_index in evaluation_metrics_all:
-            if evaluation_metrics_all[img_index]['num_connected_components'] == 1:
-                samples_considered_for_retraining.append(img_index)
-
-        # If not enough samples have exactly 1 connected components, add more
-        if len(samples_considered_for_retraining) < num_samples_per_retraining:
-            extra_samples = num_samples_per_retraining - len(samples_considered_for_retraining)
-
-            for img_index in all_samples_DICE_descending:
-
-                # Add sample to list of samples considered for retraining if it has not already been added
-                if img_index not in samples_considered_for_retraining:
-                    samples_considered_for_retraining.append(img_index)
-                    extra_samples -= 1
-
-                if extra_samples == 0:
-                    break
-
-        if len(samples_considered_for_retraining) == num_samples_per_retraining:
-            samples_for_retraining = samples_considered_for_retraining
-
-        else:
-            # Select sample with the highest combined centerline "DICE" score
-            samples_for_retraining = sorted(samples_considered_for_retraining, 
-                                        key=lambda x: evaluation_metrics_all[x]['combined_centerline_dice_score'], 
-                                        reverse=True)[:num_samples_per_retraining]
-
-    elif selection_method == 'random':
-        # Select random sample
-        samples_for_retraining = np.random.default_rng(seed = 0).choice(all_samples, num_samples_per_retraining, replace=False)
-
-    retraining = {
-                  'samples_for_retraining': samples_for_retraining,
-                  'selection_method': selection_method,
-                  'num_connected_components': [evaluation_metrics_all[sample]["num_connected_components"] for sample in samples_for_retraining],
-                  'predicted_centerline_coverage_of_ground_truth_centerline': [round(evaluation_metrics_all[sample]["predicted_centerline_coverage_of_ground_truth_centerline"], 4) for sample in samples_for_retraining],
-                  'ground_truth_centerline_coverage_of_predicted_centerline': [round(evaluation_metrics_all[sample]["ground_truth_centerline_coverage_of_predicted_centerline"], 4) for sample in samples_for_retraining],
-                  'combined_centerline_dice_score': [round(evaluation_metrics_all[sample]["combined_centerline_dice_score"], 4) for sample in samples_for_retraining],
-                 }
-
-    log.info(f'-------------------------------- Re-training -------------------------------')
-    log.info(f'Number of samples evaluated: {num_samples}')
-    log.info(f'Number of samples selected for re-training: {num_samples_per_iteration}')
-    log.info(f'Selection method: {retraining["selection_method"]}')
-    log.info(f'Image indices of samples selected for re-training: {retraining["samples_for_retraining"]}')
-    log.info(f'Number of connected components: {retraining["num_connected_components"]}')
-    log.info(f'Predicted centerline coverage of the ground truth centerline: {retraining["predicted_centerline_coverage_of_ground_truth_centerline"]}')
-    log.info(f'Ground truth centerline coverage of the predicted centerline: {retraining["ground_truth_centerline_coverage_of_predicted_centerline"]}')
-    log.info(f'Combined centerline "DICE" score: {retraining["combined_centerline_dice_score"]}')
+    # Print evaluation metrics
+    log.info(f'-------------- Evaluation metrics (w.r.t GT LAD segmentation) --------------')
+    log.info(f'Image index: {img_index}')
+    log.info(f'DICE: {DICE:.4f}')
+    log.info(f'IoU: {IoU:.4f}')
+    log.info(f'Hausdorff distance: {hausdorff_distance:.4f}')
     log.info(f'----------------------------------------------------------------------------\n')
 
-    return retraining
+    try:
+        rounded_hausdorff_distance = round(hausdorff_distance)
+    except OverflowError:
+        log.error(f"OverflowError: cannot convert float infinity to integer for image index {img_index}")
+        rounded_hausdorff_distance = float('inf')
 
+    evaluation_metrics = {
+                          'DICE': round(DICE, 4), 
+                          'IoU': round(IoU, 4),
+                          'Hausdorff_distance': rounded_hausdorff_distance,
+                          }
+    
+    return evaluation_metrics
 
+def compute_mean_std_of_evaluation_metrics(evaluation_metrics_test, config, log):
+    """ 
+    Compute the mean and standard deviation of the evaluation metrics for all samples in the test set
+    """
+
+    # Image indices of all test samples (as strings)
+    test_img_indices_str = list(evaluation_metrics_test.keys())[1:]
+
+    # Evaluation metrics keys from the dictionary
+    evaluation_metrics_keys = list(evaluation_metrics_test[test_img_indices_str[0]].keys())
+
+    # Prepare dictionaries
+    evaluation_metrics_list = {key: [] for key in evaluation_metrics_keys}
+    evaluation_metrics_mean = {f"{key}_mean": [] for key in evaluation_metrics_keys}
+    evaluation_metrics_std = {f"{key}_std": [] for key in evaluation_metrics_keys}
+
+    for img_index in test_img_indices_str:
+
+        # Get evaluation metrics dictionary of the image
+        evaluation_metrics_img = evaluation_metrics_test[img_index]
+
+        for key in evaluation_metrics_keys:
+
+            # Append the metric value to the corresponding list in evaluation_metrics_list
+            evaluation_metrics_list[key].append(evaluation_metrics_img[key])
+    
+    # Compute the mean and std of each evaluation metric
+    for key in evaluation_metrics_keys:
+
+        # All values of each metric
+        all_values = evaluation_metrics_list[key]
+
+        # Mean and std of all values
+        mean_value = float(np.mean(all_values))
+        std_value = float(np.var(all_values))
+
+        # Append the mean and std metric value to dictionaries
+        evaluation_metrics_mean[f"{key}_mean"] = round(mean_value, 4)
+        evaluation_metrics_std[f"{key}_std"] = round(std_value, 4)
+
+    return evaluation_metrics_list, evaluation_metrics_mean, evaluation_metrics_std
+
+def sort_all_evaluation_metrics(evaluation_metrics, split, config, log):
+    """ 
+    Sort the evaluation metrics in ascending (lowest to highest) order based on the weighted 
+    DICE score, and return it as a new dictionary with the image indices as keys.
+    """
+
+    # Image indices of all samples (as strings)
+    if split == "unlabeled":
+        img_indices = list(evaluation_metrics.keys())[1:]
+    
+    elif split == "test":
+        img_indices = list(evaluation_metrics.keys())[1:-3]
+
+    sorted_evaluation_metrics = {img_index: evaluation_metrics[img_index]['weighted_centerline_dice_score'] for img_index in img_indices}
+    sorted_evaluation_metrics = {k: v for k, v in sorted(sorted_evaluation_metrics.items(), key=lambda item: item[1], reverse=False)}
+
+    return sorted_evaluation_metrics
