@@ -56,7 +56,15 @@ def select_samples_for_retraining(evaluation_metrics_unlabeled, config, log, ite
         # Select the samples with the highest weighted scores
         samples_for_retraining = all_sample_indices_sorted_according_to_weighted_scores[:num_samples_per_retraining]
 
-    if selection_method == 'uncertainty':
+    elif selection_method == 'middle':
+
+        # Select samples between the 25th and 75th percentile of the weighted scores
+        lower_bound = int(num_samples * 0.25)
+        upper_bound = int(num_samples * 0.75)
+
+        samples_for_retraining = all_sample_indices_sorted_according_to_weighted_scores[lower_bound:upper_bound]
+
+    elif selection_method == 'uncertainty':
         
         # Select the samples with the highest entropy (uncertainty)
         samples_for_retraining = all_sample_indices_sorted_according_to_entropy[:num_samples_per_retraining]
