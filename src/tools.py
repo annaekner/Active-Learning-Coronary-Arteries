@@ -395,7 +395,7 @@ def compute_mean_std_of_evaluation_metrics(evaluation_metrics_test, config, log)
 
         # Mean and std of all values
         mean_value = float(np.mean(all_values))
-        std_value = float(np.var(all_values))
+        std_value = float(np.std(all_values))
 
         # Append the mean and std metric value to dictionaries
         evaluation_metrics_mean[f"{key}_mean"] = round(mean_value, 4)
