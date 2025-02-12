@@ -62,7 +62,11 @@ def select_samples_for_retraining(evaluation_metrics_unlabeled, config, log, ite
         lower_bound = int(num_samples * 0.25)
         upper_bound = int(num_samples * 0.75)
 
-        samples_for_retraining = all_sample_indices_sorted_according_to_weighted_scores[lower_bound:upper_bound]
+        # Get eligible samples
+        samples_considered_for_retraining = all_sample_indices_sorted_according_to_weighted_scores[lower_bound:upper_bound]
+
+        # Sample the required number of samples from the eligible samples
+        samples_for_retraining = np.random.default_rng(seed = seed).choice(samples_considered_for_retraining, num_samples_per_retraining, replace = False)
 
     elif selection_method == 'uncertainty':
         
