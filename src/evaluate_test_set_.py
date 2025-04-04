@@ -1,6 +1,5 @@
 import json
 import logging
-import numpy as np
 
 import tools
 
@@ -10,7 +9,6 @@ def evaluate_test_set(test_img_indices, config, log, iteration):
     base_dir = config.base_settings.base_dir
     version = config.base_settings.version
     dataset_name = config.dataset_settings.dataset_name
-    seed = config.base_settings.seed
 
     num_samples_test = config.test_settings.num_samples_test
 

@@ -1,1 +1,0 @@
-# Script similar to extract_test_set_.py, but for extracting the initial training samples

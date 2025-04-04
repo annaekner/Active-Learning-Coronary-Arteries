@@ -1,6 +1,5 @@
 import json
 import logging
-import numpy as np
 
 import tools
 
@@ -9,9 +8,6 @@ def evaluate_unlabeled_set(test_img_indices, config, log, iteration):
     # Configuration settings
     base_dir = config.base_settings.base_dir
     version = config.base_settings.version
-    dataset_name = config.dataset_settings.dataset_name
-    seed = config.base_settings.seed
-    num_samples_test = config.test_settings.num_samples_test
 
     data_iterations_dir = config.data_iterations.dir
     iterations_evaluations_dir = config.data_iterations.evaluations_dir
@@ -26,7 +22,6 @@ def evaluate_unlabeled_set(test_img_indices, config, log, iteration):
     num_samples_unlabeled = len(unlabeled_img_indices)
 
     log.info(f"Number of samples in the unlabeled set: {num_samples_unlabeled}")
-    # log.info(f"Image indices of samples in the unlabeled set: {unlabeled_img_indices}")
 
     # Nested dictionary for storing evaluation metrics of all unlabeled predictions
     evaluation_metrics_unlabeled = {}

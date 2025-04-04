@@ -1,12 +1,10 @@
-import os
-import glob
-
-from tools import list_of_all_predictions, load_prediction_segmentation, load_ground_truth_centerline, compute_centerline_from_prediction, compute_evaluation_metrics_wrtGTcenterline
+from tools import (
+    list_of_all_predictions, load_prediction_segmentation, 
+    load_ground_truth_centerline, compute_centerline_from_prediction, 
+    compute_evaluation_metrics_wrtGTcenterline
+)
 
 def evaluate(config, log, iteration):
-
-    # Get iteration number
-    # iteration = config.base_settings.iteration
 
     # Get image indices of all predictions
     predictions_img_indices = list_of_all_predictions(config, log, iteration)
@@ -32,9 +30,5 @@ def evaluate(config, log, iteration):
 
         # 5. Store evaluation metrics in nested dictionary
         evaluation_metrics_all[img_index] = evaluation_metrics_centerline
-
-    # TODO: This does not print, for whatever reason?? 
-    log.info("Nested dictionary of all evaluations (evaluation_metrics_all):")
-    log.info(evaluation_metrics_all)
 
     return evaluation_metrics_all
