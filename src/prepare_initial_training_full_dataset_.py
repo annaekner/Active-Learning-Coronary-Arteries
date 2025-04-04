@@ -1,7 +1,6 @@
 import os
 import re
 import json
-import numpy as np 
 
 def prepare_initial_training_full_dataset(test_img_indices, config, log):
 
@@ -10,17 +9,12 @@ def prepare_initial_training_full_dataset(test_img_indices, config, log):
     version = config.base_settings.version
     dataset_name = config.dataset_settings.dataset_name
     num_channels = config.base_settings.num_channels
-    seed = config.base_settings.seed
 
     data_raw_dir = config.data_raw.dir
     train_images_dir = config.data_raw.train_images_dir
     test_images_dir = config.data_raw.test_images_dir
     train_labels_dir = config.data_raw.train_labels_dir
     test_labels_dir = config.data_raw.test_labels_dir
-
-    data_preprocessed_dir = config.data_preprocessed.dir
-
-    num_samples_initial_training = config.train_settings.num_samples_initial_training
 
     log.info(f'-------------------------- Prepare initial training -------------------------')
 
