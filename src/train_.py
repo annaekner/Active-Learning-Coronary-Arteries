@@ -5,7 +5,6 @@ def train(config, log, iteration):
     # Configuration settings
     base_dir = config.base_settings.base_dir
     version = config.base_settings.version
-    dataset_name = config.dataset_settings.dataset_name
     dataset_id = config.dataset_settings.dataset_id
 
     data_iterations_dir = config.data_iterations.dir
@@ -16,11 +15,10 @@ def train(config, log, iteration):
     fold = config.train_settings.fold
     finetuning = config.train_settings.finetuning
 
-
     # Run the nnUNetv2_train command
     # EXAMPLE: nnUNetv2_train 1 3d_fullres all -tr nnUNetTrainer_50epochs
 
-    # Finetuning: traing from scrath in first iteration, and finetune in all other iterations
+    # Finetuning: train from scrath in first iteration, and finetune in all other iterations
     if finetuning: 
 
         # Path of the checkpoint to train from
@@ -55,7 +53,7 @@ def train(config, log, iteration):
             log.info(f"Training with pre-trained weights")
             log.info(f"Path to model checkpoint from previous iteration: '{checkpoint_path}'")
     
-    # No finetuning: traing from scrath in every iteration
+    # No finetuning: train from scrath in every iteration
     elif not finetuning:
         
         # Train without pre-trained weights
