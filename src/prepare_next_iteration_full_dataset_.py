@@ -1,11 +1,7 @@
 import os
 import re
 import glob
-import json
 import shutil
-import numpy as np
-
-import tools
 
 def prepare_next_iteration_full_dataset(test_img_indices, config, log, iteration):
 
@@ -13,16 +9,7 @@ def prepare_next_iteration_full_dataset(test_img_indices, config, log, iteration
     base_dir = config.base_settings.base_dir
     version = config.base_settings.version
     dataset_name = config.dataset_settings.dataset_name
-    num_channels = config.base_settings.num_channels
-    seed = config.base_settings.seed
-
-    data_raw_dir = config.data_raw.dir
-    train_images_dir = config.data_raw.train_images_dir
-    test_images_dir = config.data_raw.test_images_dir
-    train_labels_dir = config.data_raw.train_labels_dir
-    test_labels_dir = config.data_raw.test_labels_dir
-
-    data_preprocessed_dir = config.data_preprocessed.dir
+    
     data_predicted_dir = config.data_predicted.dir
     data_results_dir = config.data_results.dir
 
@@ -33,8 +20,6 @@ def prepare_next_iteration_full_dataset(test_img_indices, config, log, iteration
     network_configuration = config.train_settings.network_configuration
     trainer = config.train_settings.trainer
     fold = config.train_settings.fold
-
-    num_samples_test = config.test_settings.num_samples_test
 
     log.info(f'-------------------------- Prepare next iteration --------------------------')
     # -------------------- STEP 1: Move files from nnUNet_predictions to /iterations/ folder -------------------- #
