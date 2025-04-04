@@ -89,9 +89,6 @@ def plot_evaluation_metric(all_evaluations, evaluation_metric, ax, title = None,
     best = all_evaluations["best"][evaluation_metric][0]
     best_std = all_evaluations["best"][evaluation_metric][1]
 
-    middle = all_evaluations["middle"][evaluation_metric][0]
-    middle_std = all_evaluations["middle"][evaluation_metric][1]
-
     random = all_evaluations["random"][evaluation_metric][0]
     random_std = all_evaluations["random"][evaluation_metric][1]
 
@@ -107,10 +104,7 @@ def plot_evaluation_metric(all_evaluations, evaluation_metric, ax, title = None,
 
     # Samples in training set across iterations
     num_samples_dataset = 884 - 100  # Exluding the test set
-    # num_samples_training = [5, 15, 25, 35, 45]
-    # num_samples_training = [5, 30, 55, 80, 105]
     num_samples_training = [5, 30, 55, 80, 105, 130]
-    # num_samples_training = [5, 30, 55, 80, 105, 130, 155, 180]
     percent_samples_training = [num_samples_training[i] / num_samples_dataset * 100 for i in range(len(num_samples_training))]
 
     # Combine num_samples_training and percent_samples_training into a list of strings
@@ -119,7 +113,6 @@ def plot_evaluation_metric(all_evaluations, evaluation_metric, ax, title = None,
     # Plot mean of evaluation metric
     ax.plot(worst, label="LWOV", color='red') #, marker='o')
     ax.plot(best, label="HWOV", color='green') #, marker='o')
-    ax.plot(middle, label="MWOV", color='orange') #, marker='o')
     ax.plot(random, label="Random", color='blue') #, marker='o')
     ax.plot(uncertainty, label="Entropy", color='purple')
     ax.plot(full_dataset, label="Full dataset", linestyle = '--', color='grey')
@@ -128,7 +121,6 @@ def plot_evaluation_metric(all_evaluations, evaluation_metric, ax, title = None,
     if not evaluation_metric in ["Hausdorff distance", "Number of connected components"]:
         ax.fill_between(range(num_iterations), np.array(worst) - np.array(worst_std), np.array(worst) + np.array(worst_std), color='red', alpha=0.1)
         ax.fill_between(range(num_iterations), np.array(best) - np.array(best_std), np.array(best) + np.array(best_std), color='green', alpha=0.1)
-        ax.fill_between(range(num_iterations), np.array(middle) - np.array(middle_std), np.array(middle) + np.array(middle_std), color='orange', alpha=0.1)
         ax.fill_between(range(num_iterations), np.array(random) - np.array(random_std), np.array(random) + np.array(random_std), color='blue', alpha=0.1)
         ax.fill_between(range(num_iterations), np.array(uncertainty) - np.array(uncertainty_std), np.array(uncertainty) + np.array(uncertainty_std), color='purple', alpha=0.1)
         ax.fill_between(range(num_iterations), np.array(full_dataset) - np.array(full_dataset_std), np.array(full_dataset) + np.array(full_dataset_std), color='grey', alpha=0.1)
@@ -158,10 +150,8 @@ def plot_all_evaluation_metrics(all_evaluations, evaluation_metrics):
         plot_evaluation_metric(all_evaluations, evaluation_metric, axs[i])
 
     plt.subplots_adjust(hspace=0.4, wspace=0.2)
-    # plt.tight_layout()
-    # plt.savefig("../Figures/results/all_evaluation_metrics_v6.png")
     plt.savefig("/zhome/cd/e/145569/Documents/special-course/all_evaluation_metrics_884samples_v3.png")
-    # plt.show()
+    plt.show()
 
 def plot_single_evaluation_metric(all_evaluations, evaluation_metric, title, y_label):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -173,7 +163,6 @@ def plot_single_evaluation_metric(all_evaluations, evaluation_metric, title, y_l
 if __name__ == "__main__":
 
     # Directories
-    # experiments_dir = r"C:/Users/annae/OneDrive - Danmarks Tekniske Universitet/Speciale/Specialkursus/experiments"
     experiments_dir = r"/work3/s193396"
 
     num_iterations = 6
@@ -181,7 +170,6 @@ if __name__ == "__main__":
     all_experiments = [
                        "experiment_worst_884samples_v3",
                        "experiment_best_884samples_v3",
-                       "experiment_middle_884samples_v3",
                        "experiment_random_884samples_v3",
                        "experiment_uncertainty_884samples_v3",
                        "experiment_full_dataset_884samples_v1",
@@ -190,7 +178,6 @@ if __name__ == "__main__":
     all_selections = [
                       "worst",
                       "best",
-                      "middle",
                       "random",
                       "uncertainty",
                       "full_dataset"
